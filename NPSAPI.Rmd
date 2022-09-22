@@ -12,22 +12,52 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Requirements
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+library(jsonlite)
+library(tidyverse)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+# National Parks Service API
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
+This function allows user to access the `campgrounds` endpoint on the National Parks Service API. They can specify two arguments, one for `stateAbbreviation` and a second for `limitResultsTo`. If no information is entered for these, the default values are "NC" and "100".
+
+```{r}
+getCampgrounds<- function(stateAbbreviation="NC", limitResultsTo="100"){
+  baseURL<-"https://developer.nps.gov/api/v1/campgrounds?"
+  
+  state<- paste("stateCode=", stateAbbreviation=stateAbbreviation, sep = "")
+  
+  limit<- paste("limit=", limitResultsTo=limitResultsTo, sep = "")
+  
+  searchURL<- paste(baseURL,state,"&", limit, "&", apiKey, sep = "")
+  
+  campgrounds<- fromJSON(searchURL)
+  return(campgrounds$data)
+
+}
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+Test `getCampgrounds()` function using default settings
+```{r}
+defaultCampResults<- getCampgrounds()
+
+defaultCampResults
+```
+
+
+
+Test `getCampgrounds()` function with user specifications of `stateAbbreviation` of `CA` and `limitResultsTo` of `30`.
+
+```{r}
+testCampResultsCA30<-getCampgrounds(stateAbbreviation = "CA", limitResultsTo = "30")
+
+testCampResultsCA30
+```
+
