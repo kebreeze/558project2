@@ -23,41 +23,113 @@ library(tidyverse)
 # National Parks Service API
 
 
-This function allows user to access the `campgrounds` endpoint on the National Parks Service API. They can specify two arguments, one for `stateAbbreviation` and a second for `limitResultsTo`. If no information is entered for these, the default values are "NC" and "100".
+This function allows user to access the `campgrounds` endpoint on the National Parks Service API. They can specify two arguments, one for `stateAbbreviation` and a second for `limitResultsTo`. If no information is entered for these, the default will return information for all states and limit the results to 40.
 
 ```{r}
-getCampgrounds<- function(stateAbbreviation="NC", limitResultsTo="100"){
+getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
   baseURL<-"https://developer.nps.gov/api/v1/campgrounds?"
   
-  state<- paste("stateCode=", stateAbbreviation=stateAbbreviation, sep = "")
+  state<- paste0("stateCode=", stateAbbreviation=stateAbbreviation)
   
-  limit<- paste("limit=", limitResultsTo=limitResultsTo, sep = "")
+  limit<- paste0("limit=", limitResultsTo=limitResultsTo)
   
-  searchURL<- paste(baseURL,state,"&", limit, "&", apiKey, sep = "")
+  searchURL<- paste0(baseURL,state,"&", limit, "&", apiKey)
   
   campgrounds<- fromJSON(searchURL)
-  return(campgrounds$data)
+  
+  return(as_tibble(campgrounds$data))
+  }
 
+```
+
+
+## Reformatting Variables
+
+The data from the API needs some reformatting before it can be used for our analysis. All data was read in as character data, so here we are coercing some of this data to numeric. We are also creating a new variable for campground size (small, medium, or large) as well as creating new variables for `cellService` and `campStore` that will be factors.
+```{r}
+cleaningData<- function(campSizeOutput, characterVector){
+  CampgroundData<- campSizeOutput%>%
+    mutate(
+      boatOrWalk = (as.numeric(campsites$walkBoatTo)),
+      RVonly = (as.numeric(campsites$rvOnly)),
+      electric = (as.numeric(campsites$electricalHookups)),
+      reservable = (as.numeric(numberOfSitesReservable)),
+      noReservation = (as.numeric(numberOfSitesFirstComeFirstServe)),
+      cellService = (as.factor(amenities$cellPhoneReception)),
+      campStore = (as.factor(amenities$campStore)),
+      totalSites = (as.numeric(campsites$totalSites)),
+      campgroundSize = if_else(totalSites>100, "large",
+                         if_else(totalSites>50, "medium", "small"))
+      )
+    
+  return(CampgroundData)
+}
+```
+
+
+
+Create a new numeric variable for `totalSites` from the previous character vector `campsites$totalSites`. Using the new `totalSites` variable, create a new campsite size variable `campgroundSize` that classifies campsites as small if there are fewer than 50 campsites, medium if there are between 50 and 100 campsites, and large if there are more that 100 campsites.
+```{r}
+campSize<- function(outputgetCampgrounds){
+  campgroundSize<- outputgetCampgrounds%>%
+      mutate(
+    totalSites = (as.numeric(campsites$totalSites)
+  ),
+  campgroundSize = if_else(totalSites>100, "large",
+                         if_else(totalSites>50, "medium", "small")))
+
+  return(campgroundSize)
 }
 
+
 ```
-
-
-
-Test `getCampgrounds()` function using default settings
-```{r}
-defaultCampResults<- getCampgrounds()
-
-defaultCampResults
-```
-
 
 
 Test `getCampgrounds()` function with user specifications of `stateAbbreviation` of `CA` and `limitResultsTo` of `30`.
 
 ```{r}
-testCampResultsCA30<-getCampgrounds(stateAbbreviation = "CA", limitResultsTo = "30")
+testCampResultsCA100<-getCampgrounds(stateAbbreviation = "CA", limitResultsTo = "100")
 
-testCampResultsCA30
+#CAcamp<-testCampResultsCA100%>%
+#  mutate(
+#    sites = as.numeric(numberOfSitesReservable)
+#  )
+
+
+#totalSites<- testCampResultsCA100%>%
+#  mutate(
+#    totalSites = as.numeric(campsites$totalSites)
+#  )
+```
+
+
+
+
+# Data Exploration
+
+
+
+## Numerical Summaries
+We are going to look at some numeric summaries related to our campsite data. 
+
+```{r}
+CAnum<-cleaningData(testCampResultsCA100)
+```
+
+### Contingency Tables
+
+```{r}
+table(CAnum$amenities$firewoodForSale, CAnum$campStore)
+```
+
+
+
+Looking at total sites and electrical hookups
+```{r}
+plot1<- ggplot(CAnum, aes(x=totalSites, y=reservable, color=cellService)) + 
+  geom_point(position = "jitter") + 
+  facet_wrap(~campStore)
+
+plot1
 ```
 
