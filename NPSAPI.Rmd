@@ -9,52 +9,68 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, eval=FALSE)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Let's Learn How To Use APIs!
 
-This vignette is dedicated to helping better understand APIs. Specifically, we will be looking at how to contact an API using user-generated functions to query, parse and return well structured data. The second portion of this vignette will look at how to use functions to do some exploratory data analysis on the data obtained from the API. 
+This vignette is dedicated to helping better understand APIs. Specifically, we will be looking at how to contact an API using user-generated functions to query, parse and return well structured data. The second portion of this vignette will look at how to use functions to do some exploratory data analysis on the data obtained from the API.  
+
+
+## Requirements
+
+
+In order to follow along with this vignette, the user will need to load the following packages using the `library()` function.  
+
+1.  The `jsonlite` package - The `jsonlite` package will allow us to contact the API via URL and help to parse the data returned from our API. The National Parks API only returns data in the form of JSON files, so the `jsonlite` package will work nicely with this API. If you are working with another API it will be important to understand what type of data the API will return and identify the appropriate package to parse your raw data that your API returns.  
+2.  The `tidyverse` package - The `tidyverse` package will allow us to perform basic exploratory data analysis.
+
 
 ```{r}
 library(jsonlite)
 library(tidyverse)
-library(httr)
 ```
 
-
-# Requirements
-
-
-In order to follow along with this vignette, the user will need to load the following packages.  
-
-1.  The `httr` package - The `httr` package will allow us to contact the API to obtain our data, as well as helping simplify error handling.  
-2.  The `jsonlite` package - The `jsonlite` package will help to parse the data returned from our API. The National Parks API only returns data in the form of JSON files, so the `jsonlite` package will work nicely with this API. If you are working with another API it will be important to understand what type of data the API will return and identify the appropriate package to parse your raw data that the API returns.  
-3.  The `tidyverse` package - The `tidyverse` package will allow us to perform basic exploratory data analysis.
-
-
-
-
-# National Parks Service API
+## National Parks Service API
 
 **Background Information on the National Parks Service API**
 
 For this vignette we are using the [National Parks Service's API](https://www.nps.gov/subjects/developer/api-documentation.htm). This API is designed to provide data about US National Parks and their facilities, events, news, alerts, activities, and much more. With over 20 different endpoints, this API provides a wide array of different types of data that one might be interested in working with when trying to learn about how to interact with and use APIs in R. Users do need an API key (provided for free if you register) to use the National Parks API. It returns data in the form of JSON files only.  
 
 
-# Writing Functions to Contact the API 
+## Writing Functions to Contact the API 
 
 
 We first need to write functions to contact the API an return well-formatted, parsed data in the form of data frames. We will demonstrate how to write functions that allow the user to customize their query and return specific data. Additionally, we will show how to tackle error handling and allow for a more flexible user interface that allows the user to specify state by either the two letter state abbreviation, or the full state name.  
 
 
-## `campgrounds` Function
-This function allows user to access the `campgrounds` endpoint on the National Parks Service API. They can specify two arguments, one for `stateAbbreviation` and a second for `limitResultsTo`. If no information is entered for these, the default will return information for all states and limit the results to 40.
+### `getParksData()` Function  
+
+The `getParksData` function demonstrates how to contact an API to return initial data from an endpoint using the `fromJSON` function from the `jsonlite` package. This function will allow a user to specify any endpoint from the National Parks Service API and return formatted data from that endpoint. The `getParksData()` function will format our request to the API with our specified endpoint, contact the API to return raw data from that endpoint, and then parse the returned data into a more usable format. 
+
+```{r}
+getParksData<- function(endpoint){
+  baseURL<-"https://developer.nps.gov/api/v1/"
+  endpoint<- endpoint
+  limit<- "700"
+  searchURL<- paste0(baseURL, endpoint, "?","&", limit,"&", apiKey)
+  endpointData<- fromJSON(searchURL)
+  
+  return(endpointData)
+  }
+```
+
+
+When we look at the list that is returned with the `getParksData` function, we can see that the data of interest is stored in a list element called `data` Now that we know that our data is stored in the list element called `data` we can go ahead and create a function to further parse the data into topics of interest. In this example we are returning data from the `campgrounds` endpoint of the National Parks Service API, but we can use the same basic format to return data from other endpoints, we just need to look at the documentation from the API to understand the types of information that we need to enter when writing these types of functions.
+
+
+### Contacting the `campgrounds` Endpoint  
+This function allows user to access the `campgrounds` endpoint on the National Parks Service API. They can specify two arguments, one for `stateAbbreviation` and a second for `limitResultsTo`. If no information is entered for these, the default will return information for all states and limit the results to 40.  
+
 
 ```{r}
 getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
   baseURL<-"https://developer.nps.gov/api/v1/campgrounds?"
-  
   state<- paste0("stateCode=", stateAbbreviation=stateAbbreviation)
   
   limit<- paste0("limit=", limitResultsTo=limitResultsTo)
@@ -69,10 +85,63 @@ getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
 ```
 
 
-## Reformatting Variables
+Before we move on to the next step, let's take a look at what this data looks like when returned using the `getCampgrounds()` function using defaults and when a user specifies a state and number of results to return. 
 
-The data from the API needs some reformatting before it can be used for our analysis. All data was read in as character data, so here we are coercing some of this data to numeric. We are also creating a new variable for campground size (small, medium, or large) as well as creating new variables for `cellService` and `campStore` that will be factors.  
+**`getCampgrounds()` using defaults**
+```{r}
+defaultSettings<-getCampgrounds()
 
+defaultSettings
+```
+
+
+**`getCampgrounds()` looking at California and limiting results to 20**
+
+```{r}
+getCampgrounds("CA", 20)
+```
+
+
+## Data Exploration
+
+
+Next, we will walk through some basic exploratory data analysis. In the data exploration steps we will demonstrate:  
+
+
+1.  How to pull data from at least two calls to our data obtaining function.  
+2.  How to create a new variable that is a function of other variables.  
+3.  How to create contingency tables based on data returned from the API.  
+4.  How to create numerical summaries for quantitative variables at each setting of a categorical variable.  
+5.  How to create plots with nice labels and titles, utilizing coloring, grouping, faceting, etc. and including the following plot types:  
+    +  Bar plots  
+    +  Histograms  
+    +  Box plots  
+    +  Scatter plots  
+
+
+
+## Creating New Variables as a Function of Other Variables  
+
+**Reformatting Variables**
+
+The data from the API needs some reformatting before it can be used for our analysis. All data was read in as character data, so we will need to coerce some of this data to numeric for our analysis. We also want to demonstrate how you might create some new variables from existing variables. We will do this in a couple of different ways, through the creation of a new variable for campground size (small, medium, or large) as well as creating new variables for `cellService` and `campStore` that will be factors with specified levels.  
+
+
+### How to Create New Varaibles  
+Create a new numeric variable for `totalSites` from the previous character vector `campsites$totalSites`. Using the new `totalSites` variable, create a new campsite size variable `campgroundSize` that classifies campsites as small if there are fewer than 50 campsites, medium if there are between 50 and 100 campsites, and large if there are more that 100 campsites.
+```{r}
+campSize<- function(outputgetCampgrounds){
+  campgroundSize<- outputgetCampgrounds%>%
+      mutate(
+    totalSites = (as.numeric(campsites$totalSites)
+  ),
+  campgroundSize = if_else(totalSites>100, "large",
+                         if_else(totalSites>50, "medium", "small")))
+
+  return(campgroundSize)
+}
+
+```
 
 ### `cleaningData` Funtion
 ```{r}
@@ -96,22 +165,7 @@ cleaningData<- function(campSizeOutput, characterVector){
 ```
 
 
-## How to Create New Varaibles  
-Create a new numeric variable for `totalSites` from the previous character vector `campsites$totalSites`. Using the new `totalSites` variable, create a new campsite size variable `campgroundSize` that classifies campsites as small if there are fewer than 50 campsites, medium if there are between 50 and 100 campsites, and large if there are more that 100 campsites.
-```{r}
-campSize<- function(outputgetCampgrounds){
-  campgroundSize<- outputgetCampgrounds%>%
-      mutate(
-    totalSites = (as.numeric(campsites$totalSites)
-  ),
-  campgroundSize = if_else(totalSites>100, "large",
-                         if_else(totalSites>50, "medium", "small")))
 
-  return(campgroundSize)
-}
-
-
-```
 
 
 Test `getCampgrounds()` function with user specifications of `stateAbbreviation` of `CA` and `limitResultsTo` of `30`.
@@ -134,54 +188,71 @@ testCampResultsCA100<-getCampgrounds(stateAbbreviation = "CA", limitResultsTo = 
 
 
 
-# Data Exploration
 
-
-Next, we will walk through some basic exploratory data analysis. In the data exploration steps we will demonstrate:  
-
-
-1.  How to pull data from at least two calls to our data obtaining function.  
-2.  How to create a new variable that is a function of other variables.  
-3.  How to create contingency tables based on data returned from the API.  
-4.  How to create numerical summaries for quantitative variables at each setting of a categorical variable.  
-5.  How to create plots with nice labels and titles, utilizing coloring, grouping, faceting, etc. and including the following plot types:  
-    +  Bar plots  
-    +  Histograms  
-    +  Box plots  
-    +  Scatter plots  
-
-
-## Numerical Summaries
-We are going to look at some numeric summaries related to our campsite data. 
+### Numerical Summaries
+We are going to look at some numeric summaries related to our campsite data.  The first thing that we want to do is to use our `cleaningData` function to make sure that we have numeric data to work with for our numerical summaries.
 
 ```{r}
 CAnum<-cleaningData(testCampResultsCA100)
 ```
 
-
-## Creating New Variables as a Function of Other Variables  
-
-
-## Contingency Tables
+Ok, so now let's look at some numeric summaries for `totalSites` across each setting of our `campgroundSize` variable.  
 
 ```{r}
-table(CAnum$amenities$firewoodForSale, CAnum$campStore)
+campSizeSum<- CAnum%>%
+  group_by(campgroundSize)%>%
+  summarise(avg = mean(totalSites), med = median(totalSites), sd = sd(totalSites))
+
+campSizeSum
+```
+
+
+
+
+
+
+### Contingency Tables
+
+Next let's see how to create a contingency table from our data using the `table()` function. Here we are creating a contingency table looking at our `campStore` and `campgroundSize` variables.
+```{r}
+table(CAnum$campgroundSize, CAnum$campStore)
 ```
 
 
 ## Creating Numerical Summaries for Quantivative Variables at Each Setting of a Categorical Variable  
 
 
-## Creating a Bar Plot  
-
-## Creating a Histogram  
-
-## Creating a Boxplot  
-
-## Creating a Scatterplot  
+## Data Visualization with `ggplot2`  
 
 
-## Creating Plots Comparing Numeric Variables Across Settings of A Categorical Variable
+
+### Creating a Bar Plot  
+
+Let's create a bar plot to visualize the information from our contingency table. Here we can see the number of campgrounds in each of our `camgroundSize` categories, as well as visualize how this relates to our `campStore` variable.
+
+```{r}
+ggplot(CAnum, aes(x=campgroundSize))+
+  geom_bar(aes(fill=campStore))
+```
+
+
+### Creating a Histogram  
+
+Let's look at a histogram of our `totalSites` variable.
+
+```{r}
+ggplot(CAnum, aes(x=totalSites)) + 
+  geom_histogram(binwidth = 20)
+```
+
+
+
+### Creating a Boxplot  
+
+### Creating a Scatterplot  
+
+
+### Creating Plots Comparing Numeric Variables Across Settings of A Categorical Variable
 
 Looking at total sites and electrical hookups
 ```{r}
