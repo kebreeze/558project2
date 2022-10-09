@@ -2,13 +2,15 @@
 title: "National Parks API Vignette"
 author: "Kelley Breeze and Zhiyuan Yang"
 date: "2022-09-22"
-output: 
-  html_document: 
-    toc: yes 
-    toc_float: TRUE
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    toc: yes
+    toc_float: yes
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -50,9 +52,11 @@ The `getParksData` function demonstrates how to contact an API to return initial
 
 ```{r}
 getParksData<- function(endpoint){
-  baseURL<-"https://developer.nps.gov/api/v1/"
+  # baseURL<-"https://developer.nps.gov/api/v1/"
   endpoint<- endpoint
   limit<- "700"
+  apiKey<-Sys.getenv("apiKey")
+  baseURL<-Sys.getenv("baseURL")
   searchURL<- paste0(baseURL, endpoint, "?","&", limit,"&", apiKey)
   endpointData<- fromJSON(searchURL)
   
@@ -70,10 +74,14 @@ This function allows user to access the `campgrounds` endpoint on the National P
 
 ```{r}
 getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
-  baseURL<-"https://developer.nps.gov/api/v1/campgrounds?"
+  # baseURL<-"https://developer.nps.gov/api/v1/campgrounds?"
+  baseURL <- paste0(Sys.getenv("baseURL"), "campgrounds?")
   state<- paste0("stateCode=", stateAbbreviation=stateAbbreviation)
   
   limit<- paste0("limit=", limitResultsTo=limitResultsTo)
+  
+  apiKey<-Sys.getenv("apiKey")
+  # baseURL<-Sys.getenv("baseURL")
   
   searchURL<- paste0(baseURL,state,"&", limit, "&", apiKey)
   

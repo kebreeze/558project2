@@ -1,0 +1,7 @@
+# Make a copy of this file and name it .Renviron
+# Update the apiKey with your own personal key from NPS
+# Restart your R session to load in the following environment variables
+# Do not commit the .Renviron file, as it contains your private keys. 
+
+apiKey="YourNPSAPIKey"
+baseURL="https://developer.nps.gov/api/v1/"

@@ -3,6 +3,10 @@ National Parks API Vignette
 Kelley Breeze and Zhiyuan Yang
 2022-09-22
 
+``` r
+knitr::opts_chunk$set(echo = TRUE)
+```
+
 # Let’s Learn How To Use APIs!
 
 This vignette is dedicated to helping better understand APIs.
@@ -69,9 +73,11 @@ into a more usable format.
 
 ``` r
 getParksData<- function(endpoint){
-  baseURL<-"https://developer.nps.gov/api/v1/"
+  # baseURL<-"https://developer.nps.gov/api/v1/"
   endpoint<- endpoint
   limit<- "700"
+  apiKey<-Sys.getenv("apiKey")
+  baseURL<-Sys.getenv("baseURL")
   searchURL<- paste0(baseURL, endpoint, "?","&", limit,"&", apiKey)
   endpointData<- fromJSON(searchURL)
   
@@ -100,10 +106,14 @@ and limit the results to 40.
 
 ``` r
 getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
-  baseURL<-"https://developer.nps.gov/api/v1/campgrounds?"
+  # baseURL<-"https://developer.nps.gov/api/v1/campgrounds?"
+  baseURL <- paste0(Sys.getenv("baseURL"), "campgrounds?")
   state<- paste0("stateCode=", stateAbbreviation=stateAbbreviation)
   
   limit<- paste0("limit=", limitResultsTo=limitResultsTo)
+  
+  apiKey<-Sys.getenv("apiKey")
+  # baseURL<-Sys.getenv("baseURL")
   
   searchURL<- paste0(baseURL,state,"&", limit, "&", apiKey)
   
@@ -126,11 +136,63 @@ defaultSettings<-getCampgrounds()
 defaultSettings
 ```
 
+    ## # A tibble: 40 × 31
+    ##    id     url   name  parkC…¹ descr…² latit…³ longi…⁴ latLong audio…⁵ isPas…⁶ passp…⁷ passp…⁸
+    ##    <chr>  <chr> <chr> <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <list> 
+    ##  1 EA81B… "htt… 277 … amis    17 sit… "29.51… "-100.… "{lat:… "17 si… 0       ""      <list> 
+    ##  2 1241C… ""    Abra… grsm    Abrams… "35.61… "-83.9… "{lat:… "Mount… 0       ""      <list> 
+    ##  3 ABDC6… "htt… Adir… cato    Reserv… "39.67… "-77.4… "{lat:… "The A… 0       ""      <list> 
+    ##  4 4F9ED… "htt… Afte… bica    - Near… "45.31… "-107.… "{lat:… ""      0       ""      <list> 
+    ##  5 9FAE9… "htt… Aker… ozar    Group … "37.37… "-91.5… "{lat:… ""      0       ""      <list> 
+    ##  6 6EAB2… "htt… Alam… orpi    Primit… "32.07… "-112.… "{lat:… "Alamo… 0       ""      <list> 
+    ##  7 AB15E… "htt… Alle… ozar    Campgr… "37.14… "-91.4… "{lat:… ""      0       ""      <list> 
+    ##  8 4F9E5… "htt… Alum… biso    Alum F… "36.76… "-84.5… "{lat:… "The c… 0       ""      <list> 
+    ##  9 B0B25… ""    Amer… amme    There … ""      ""      ""      ""      0       ""      <list> 
+    ## 10 E7CC7… "htt… Anac… chis    Primit… "34.01… "-119.… "{lat:… "This … 0       ""      <list> 
+    ## # … with 30 more rows, 19 more variables: geometryPoiId <chr>, reservationInfo <chr>,
+    ## #   reservationUrl <chr>, regulationsurl <chr>, regulationsOverview <chr>,
+    ## #   amenities <df[,14]>, contacts <df[,2]>, fees <list>, directionsOverview <chr>,
+    ## #   directionsUrl <chr>, operatingHours <list>, addresses <list>, images <list>,
+    ## #   weatherOverview <chr>, numberOfSitesReservable <chr>,
+    ## #   numberOfSitesFirstComeFirstServe <chr>, campsites <df[,8]>, accessibility <df[,13]>,
+    ## #   lastIndexedDate <chr>, and abbreviated variable names ¹​parkCode, ²​description, …
+
 **`getCampgrounds()` looking at California and limiting results to 20**
 
 ``` r
 getCampgrounds("CA", 20)
 ```
+
+    ## # A tibble: 20 × 31
+    ##    id     url   name  parkC…¹ descr…² latit…³ longi…⁴ latLong audio…⁵ isPas…⁶ passp…⁷ passp…⁸
+    ##    <chr>  <chr> <chr> <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <list> 
+    ##  1 E7CC7… "htt… Anac… chis    Primit… 34.014… -119.3… {lat:3… "This … 0       ""      <list> 
+    ##  2 BC707… "htt… Atwe… seki    The ca… 36.464… -118.6… {lat:3… ""      0       ""      <list> 
+    ##  3 D82D2… "htt… Azal… seki    Azalea… 36.741… -118.9… {lat:3… ""      0       ""      <list> 
+    ##  4 07E7E… "htt… Bell… jotr    This s… 34.001… -116.0… {lat:3… "Belle… 0       ""      <list> 
+    ##  5 2AFC7… "htt… Bice… goga    Bicent… 37.824… -122.5… {lat:3… ""      0       ""      <list> 
+    ##  6 BF423… ""    Blac… moja    While … 35.048… -115.3… {lat:3… ""      0       ""      <list> 
+    ##  7 33AA5… "htt… Blac… jotr    This l… 34.072… -116.3… {lat:3… "The B… 0       ""      <list> 
+    ##  8 3EC42… "htt… Bran… whis    This t… 40.617… -122.5… {lat:4… "This … 0       ""      <list> 
+    ##  9 52046… "htt… Bran… whis    A secl… 40.617… -122.5… {lat:4… "Brand… 0       ""      <list> 
+    ## 10 58B95… "htt… Brid… yose    The Br… 37.663… -119.6… {lat:3… ""      0       ""      <list> 
+    ## 11 6BCF7… "htt… Buck… seki    Buckey… 36.522… -118.7… {lat:3… ""      0       ""      <list> 
+    ## 12 8AA8C… "htt… Butt… lavo    Butte … 40.564… -121.3… {lat:4… "Butte… 0       ""      <list> 
+    ## 13 8F36D… "htt… Camp… yose    Camp 4… 37.742… -119.6… {lat:3… ""      0       ""      <list> 
+    ## 14 3851B… "htt… Cany… seki    Canyon… 36.787… -118.6… {lat:3… ""      0       ""      <list> 
+    ## 15 14084… ""    Circ… samo    Circle… 34.111… -118.9… {lat:3… ""      0       ""      <list> 
+    ## 16 6EBE4… "htt… Coas… pore    Coast … 38.017… -122.8… {lat:3… "Coast… 0       ""      <list> 
+    ## 17 E43BE… "htt… Cold… seki    Nestle… 36.451… -118.6… {lat:3… ""      0       ""      <list> 
+    ## 18 9B5A7… "htt… Cott… jotr    The Co… 33.744… -115.8… {lat:3… "Cotto… 0       ""      <list> 
+    ## 19 B1396… "htt… Cran… yose    The Cr… 37.749… -119.8… {lat:3… ""      0       ""      <list> 
+    ## 20 4A67F… "htt… Crys… whis    The Cr… 40.6422 -122.6… {lat:4… "The C… 0       ""      <list> 
+    ## # … with 19 more variables: geometryPoiId <chr>, reservationInfo <chr>,
+    ## #   reservationUrl <chr>, regulationsurl <chr>, regulationsOverview <chr>,
+    ## #   amenities <df[,14]>, contacts <df[,2]>, fees <list>, directionsOverview <chr>,
+    ## #   directionsUrl <chr>, operatingHours <list>, addresses <list>, images <list>,
+    ## #   weatherOverview <chr>, numberOfSitesReservable <chr>,
+    ## #   numberOfSitesFirstComeFirstServe <chr>, campsites <df[,8]>, accessibility <df[,13]>,
+    ## #   lastIndexedDate <chr>, and abbreviated variable names ¹​parkCode, ²​description, …
 
 ## Data Exploration
 
@@ -249,6 +311,13 @@ campSizeSum<- CAnum%>%
 campSizeSum
 ```
 
+    ## # A tibble: 3 × 4
+    ##   campgroundSize   avg   med    sd
+    ##   <chr>          <dbl> <dbl> <dbl>
+    ## 1 large          160.  140.   56.5
+    ## 2 medium          76.8  75    15.1
+    ## 3 small           17.5  14.5  14.0
+
 ### Contingency Tables
 
 Next let’s see how to create a contingency table from our data using the
@@ -258,6 +327,12 @@ our `campStore` and `campgroundSize` variables.
 ``` r
 table(CAnum$campgroundSize, CAnum$campStore)
 ```
+
+    ##         
+    ##             No Yes - seasonal Yes - year round
+    ##   large   0 10              4                6
+    ##   medium  0 13              1                1
+    ##   small   1 51              2                2
 
 ## Creating Numerical Summaries for Quantivative Variables at Each Setting of a Categorical Variable
 
@@ -275,6 +350,8 @@ ggplot(CAnum, aes(x=campgroundSize))+
   geom_bar(aes(fill=campStore))
 ```
 
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
 ### Creating a Histogram
 
 Let’s look at a histogram of our `totalSites` variable.
@@ -283,6 +360,8 @@ Let’s look at a histogram of our `totalSites` variable.
 ggplot(CAnum, aes(x=totalSites)) + 
   geom_histogram(binwidth = 20)
 ```
+
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ### Creating a Boxplot
 
@@ -299,3 +378,5 @@ plot1<- ggplot(CAnum, aes(x=totalSites, y=reservable, color=cellService)) +
 
 plot1
 ```
+
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
