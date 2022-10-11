@@ -80,3 +80,97 @@ Park <- function(endpoint, statecode=NA, dateStartvalue=NA, apikey){
 
 results <- Park("parks", statecode="nc", dateStartvalue=NA, apikey="1SINtH0CurK3EmDx4bshQmLp7Yrvu0X8T9kYrmb6")
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################################################################
+getParksData<- function(endpoint, stateAbbreviation="", limitResultsTo="40", statecode, dateStartvalue){
+  
+  if (endpoint == 'campgrounds') {
+    return(getCampgrounds(stateAbbreviation,limitResultsTo ))
+
+} else if (endpoint=="alerts") {
+
+    return(getalerts(statecode))
+  
+} else if (endpoint=="events") {
+  
+  return(getalerts(dateStartvalue))
+  
+} else {
+  
+  message <- paste("ERROR: Argument for endpoints was not found in campgrounds, alerts, events",
+                   "find the correct endpoint that you're looking for.")
+  stop(message)
+}
+
+  
+  
+}
+
+
+
+getParksData()
+
+library(stringr)
+
+
+
+
+
+getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
+  
+  
+
+  if(str_length(stateAbbreviation)!=2) {
+    stateAbbreviation <- state.abb[match(str_to_title(stateAbbreviation),state.name)]
+  }
+
+
+  
+  if(toupper(stateAbbreviation) %in% state.abb) {
+    
+  baseURL<-"https://developer.nps.gov/api/v1/campgrounds?"
+  state<- paste0("stateCode=", stateAbbreviation=stateAbbreviation)
+  
+  }
+  
+  else {
+    
+    message <- paste("ERROR: Argument for state was not found in common states. Try again",
+                     "find the state you're looking for.")
+    stop(message)
+  }
+  
+  
+  limit<- paste0("limit=", limitResultsTo=limitResultsTo)
+  
+  searchURL<- paste0(baseURL,state,"&", limit, "&", "api_key=1SINtH0CurK3EmDx4bshQmLp7Yrvu0X8T9kYrmb6")
+  
+  campgrounds<- fromJSON(searchURL)
+  
+  return(as_tibble(campgrounds$data))
+}
+
+
+
+getCampgrounds("NC", 20)
