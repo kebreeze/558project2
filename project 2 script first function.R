@@ -103,6 +103,23 @@ results <- Park("parks", statecode="nc", dateStartvalue=NA, apikey="1SINtH0CurK3
 
 
 ################################################################################
+
+#Based on this description, I rewrite our main function(getParkData). 
+
+#You do not need to allow the user to query all parts of the API. Use should allow for connection to
+#multiple end points and/or multiple modifications on a single end point. In total, your functions
+#should be able to contact at least six endpoints or modifications (can be two endpoints with 5
+#modifications on one or three end points with two modifications on each, etc.)
+
+#for my understanding, I think our main function needs to return some specific endpoints with multiple modifications 
+#rather than let user can select any endpoints.
+
+#our first endpoint is "campgrounds" with the modifications: "stateAbbreviation".
+# I assume our second end point is "alerts", with the modifications: "statecode".
+# also assume our third end point is "events", with the modifications" "dateStartvalue"
+#If user enter other endpoint's name, this function will output error message.
+
+
 getParksData<- function(endpoint, stateAbbreviation="", limitResultsTo="40", statecode, dateStartvalue){
   
   if (endpoint == 'campgrounds') {
@@ -129,12 +146,23 @@ getParksData<- function(endpoint, stateAbbreviation="", limitResultsTo="40", sta
 
 
 
-getParksData()
+
+
+
+#Based on this description: 
+  
+#The user shouldn’t be required to use the abbreviation and should be able to use the quoted string for
+#use-ability. (You’d want to give the user the option of specifying the abbreviation or the quoted string.
+#For the string, you may want to check the string after converting it to all lower-case and then map it to the abbreviation for querying).
+  
+#I add if else to check whether user enter correct state abberviation in this function.
+#For example, The user can enter "NC" or "North Carlolina", other that, output error message. 
+  
+  
+  
+
 
 library(stringr)
-
-
-
 
 
 getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
@@ -142,6 +170,8 @@ getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
   
 
   if(str_length(stateAbbreviation)!=2) {
+    
+    #to let state full name mathed with stateabberviation
     stateAbbreviation <- state.abb[match(str_to_title(stateAbbreviation),state.name)]
   }
 
@@ -157,7 +187,7 @@ getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
   else {
     
     message <- paste("ERROR: Argument for state was not found in common states. Try again",
-                     "find the state you're looking for.")
+                     "It should be type the state's abbreviation or whole name. For example, NC or North Carolina; uppercase is accpeted")
     stop(message)
   }
   
@@ -173,4 +203,19 @@ getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
 
 
 
+#Accepted
 getCampgrounds("NC", 20)
+
+
+#Accepted
+getCampgrounds("North Carolina", 20)
+
+#Accepted
+getCampgrounds("NORTH Carolina", 20)
+
+#will output error message
+getCampgrounds("GG", 20)
+
+
+#will output error message
+getCampgrounds("balabala", 20)
