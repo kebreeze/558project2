@@ -25,12 +25,14 @@ This vignette is dedicated to helping better understand APIs. Specifically, we w
 In order to follow along with this vignette, the user will need to load the following packages using the `library()` function.  
 
 1.  The `jsonlite` package - The `jsonlite` package will allow us to contact the API via URL and help to parse the data returned from our API. The National Parks API only returns data in the form of JSON files, so the `jsonlite` package will work nicely with this API. If you are working with another API it will be important to understand what type of data the API will return and identify the appropriate package to parse your raw data that your API returns.  
-2.  The `tidyverse` package - The `tidyverse` package will allow us to perform basic exploratory data analysis.
+2.  The `tidyverse` package - The `tidyverse` package will allow us to perform basic exploratory data analysis.  
+3.  The `stringr` package will help with error handling for our state names/abbreviations. We can use this to work with strings provided by the user to the state argument to help identify and reformat user provided information.  
 
 
 ```{r}
 library(jsonlite)
 library(tidyverse)
+library(stringr)
 ```
 
 ## National Parks Service API
@@ -40,20 +42,28 @@ library(tidyverse)
 For this vignette we are using the [National Parks Service's API](https://www.nps.gov/subjects/developer/api-documentation.htm). This API is designed to provide data about US National Parks and their facilities, events, news, alerts, activities, and much more. With over 20 different endpoints, this API provides a wide array of different types of data that one might be interested in working with when trying to learn about how to interact with and use APIs in R. Users do need an API key (provided for free if you register) to use the National Parks API. It returns data in the form of JSON files only.  
 
 
+## A Quick Note About API Keys and `.Renviron` 
+
+
+Most APIs will require a user to enter an API key when contacting the API. An API key is unique to each user. For some APIs these are provided free and are able to be used for essentially unlimited calls to an API. In other cases, a user may be limited in the number of calls allowed to an API or may even be charged for access to the APIs data. In any case, you **SHOULD ALWAYS KEEP YOUR API KEY PRIVATE!!!** The easiest way to do this when working on a project in Rstudio/github is to create a `.Renviron` file in your working directory for your project that stores your API key. You can then update your `gitignore` to include your `.Renviron` file, thereby allowing you to access your API key for use during calls to the API, while at the same time keeping your API key secret and preventing the key from being uploaded to github. You can also store other useful objects in `.Reviron`, such as a baseURL, that you can then access for use in different functions that you create to contact your API. This prevents having to rewrite the same baseURL over and over again, and can also allow you to easily update functions that use this baseURL if the API itself decides to change the baseURL required. 
+
+
 ## Writing Functions to Contact the API 
 
 
 We first need to write functions to contact the API an return well-formatted, parsed data in the form of data frames. We will demonstrate how to write functions that allow the user to customize their query and return specific data. Additionally, we will show how to tackle error handling and allow for a more flexible user interface that allows the user to specify state by either the two letter state abbreviation, or the full state name.  
 
 
-### `getParksData()` Function  
+### Learning How to Create a Function to Contact and Return Data From an API  
 
-The `getParksData` function demonstrates how to contact an API to return initial data from an endpoint using the `fromJSON` function from the `jsonlite` package. This function will allow a user to specify any endpoint from the National Parks Service API and return formatted data from that endpoint. The `getParksData()` function will format our request to the API with our specified endpoint, contact the API to return raw data from that endpoint, and then parse the returned data into a more usable format. 
+
+**NOTE: The purpose of the `getParksData()` function is to demonstrate how one would go about constructing a function to contact a user specified endpoint of an API and to return parsed data via the `fromJSON` function of the `jsonlite` package. As this function is for demonstration purposes only, we will not use it after this point in the vignette.**  
+
+In order to contact an API a user must send a URL in the correct format during the call to the API. You can find specifics for how your API wants the URL request formatted by looking at the documentation for your API. The `getParksData` function provides an example of how we can construct our `searchURL` from the user specified `endpoint`. Knowing how to correctly format a URL from user input is the first step in writing functions to work with APIs. In this example, the `getParksData` function demonstrates how to contact an API to return initial data from an endpoint using the `fromJSON` function from the `jsonlite` package. This function will allow a user to specify any endpoint from the National Parks Service API and return formatted data from that endpoint. The `getParksData()` function will format our request to the API with the specified endpoint, contact the API to and return and parse the data into a more usable format. 
 
 ```{r}
 getParksData<- function(endpoint){
   # baseURL<-"https://developer.nps.gov/api/v1/"
-  endpoint<- endpoint
   limit<- "700"
   apiKey<-Sys.getenv("apiKey")
   baseURL<-Sys.getenv("baseURL")
@@ -65,31 +75,62 @@ getParksData<- function(endpoint){
 ```
 
 
+
+
+
+
+
+### `getState` Helper Function  
+
+
+The `getState` helper function will allow us to handle different types of inputs for our state value, including a two state abbreviation or a state name that are both not case sensitive. We want to allow a user to specify state using either a two letter state code or the full state name (not case sensitive). In addition to returning data on the specified state, it will also print a message alerting the user what state they are returning data on. If no state is specified the `getState` function will return a N`NULL` value for `retState`, which will be important when we use this helper function in future calls to the National Parks API. In a call to the API a `NULL` value for the state argument will return information on all states. The `getState` function will return an error message if a user did not specify a valid value for a state, and provide information about correct formatting for the state argument.  
+
+
+```{r}
+getState <- function(state) {
+  if(is.null(state)) {
+    return(NULL)
+  }
+  
+  retState <-NULL
+  
+  # State is a state name, find abbreviation.
+  if(str_to_title(state) %in% state.name) {
+    # Match state code with state name using state.abb and state.name built in to R.
+    retState <- state.abb[match(str_to_title(state),state.name)]
+  } else if(toupper(state) %in% state.abb) {
+    retState <- toupper(state)
+  } else {
+    stop("ERROR: Value for state argument was not a valid US state name or state two letter abbreiation. Try again. For example, NC or North Carolina will return campsites in North Carolina. NOTE: state argument is NOT case sensitive!")
+  }
+}
+```
+
+
+
+
+
 When we look at the list that is returned with the `getParksData` function, we can see that the data of interest is stored in a list element called `data` Now that we know that our data is stored in the list element called `data` we can go ahead and create a function to further parse the data into topics of interest. In this example we are returning data from the `campgrounds` endpoint of the National Parks Service API, but we can use the same basic format to return data from other endpoints, we just need to look at the documentation from the API to understand the types of information that we need to enter when writing these types of functions.
 
 
 ### Contacting the `campgrounds` Endpoint  
-This function allows user to access the `campgrounds` endpoint on the National Parks Service API. They can specify two arguments, one for `stateAbbreviation` and a second for `limitResultsTo`. If no information is entered for these, the default will return information for all states and limit the results to 40.  
+This function allows user to access the `campgrounds` endpoint on the National Parks Service API. They can specify three arguments, one for `stateAbbreviation`, a second for `limitResultsTo`, and a third for `searchTerm` that will allow a user to search by a certain term (this could be related to a type of activity, a park name, etc). If no information is entered for these, the default will return information for all states and limit the results to 40.  
 
 
 ```{r}
-getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
+getCampgrounds<- function(state=NULL, limitResultsTo="40", searchTerm=FALSE){
   # baseURL<-"https://developer.nps.gov/api/v1/campgrounds?"
   baseURL <- paste0(Sys.getenv("baseURL"), "campgrounds?")
-  state<- paste0("stateCode=", stateAbbreviation=stateAbbreviation)
-  
-  limit<- paste0("limit=", limitResultsTo=limitResultsTo)
-  
+  state<- paste0("stateCode=", getState(state))
+  limit<- paste0("limit=", limitResultsTo)
+  searchTerm <- paste0("q=", searchTerm)
   apiKey<-Sys.getenv("apiKey")
   # baseURL<-Sys.getenv("baseURL")
-  
-  searchURL<- paste0(baseURL,state,"&", limit, "&", apiKey)
-  
+  searchURL<- paste0(baseURL,state,"&", limit, "&", searchTerm, "&", apiKey)
   campgrounds<- fromJSON(searchURL)
   
   return(as_tibble(campgrounds$data))
-  }
-
+}
 ```
 
 
@@ -151,7 +192,13 @@ campSize<- function(outputgetCampgrounds){
 
 ```
 
-### `cleaningData` Funtion
+### `cleaningData` Funtion  
+
+The `cleaningData` function will convert the variables listed below from character (how they were read in) to numeric so that we can perform some exploratory data analysis.The variables that we will convert from character to numeric are:  
+
++  `campsites$walkBoatTo`  
+
+
 ```{r}
 cleaningData<- function(campSizeOutput, characterVector){
   CampgroundData<- campSizeOutput%>%
@@ -179,7 +226,7 @@ cleaningData<- function(campSizeOutput, characterVector){
 Test `getCampgrounds()` function with user specifications of `stateAbbreviation` of `CA` and `limitResultsTo` of `30`.
 
 ```{r}
-testCampResultsCA100<-getCampgrounds(stateAbbreviation = "CA", limitResultsTo = "100")
+testCampResultsCA100<-getCampgrounds(state = "CA", limitResultsTo = "100")
 
 #CAcamp<-testCampResultsCA100%>%
 #  mutate(

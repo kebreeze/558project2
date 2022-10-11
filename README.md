@@ -29,11 +29,16 @@ the following packages using the `library()` function.
     what type of data the API will return and identify the appropriate
     package to parse your raw data that your API returns.  
 2.  The `tidyverse` package - The `tidyverse` package will allow us to
-    perform basic exploratory data analysis.
+    perform basic exploratory data analysis.  
+3.  The `stringr` package will help with error handling for our state
+    names/abbreviations. We can use this to work with strings provided
+    by the user to the state argument to help identify and reformat user
+    provided information.
 
 ``` r
 library(jsonlite)
 library(tidyverse)
+library(stringr)
 ```
 
 ## National Parks Service API
@@ -50,6 +55,27 @@ to learn about how to interact with and use APIs in R. Users do need an
 API key (provided for free if you register) to use the National Parks
 API. It returns data in the form of JSON files only.
 
+## A Quick Note About API Keys and `.Renviron`
+
+Most APIs will require a user to enter an API key when contacting the
+API. An API key is unique to each user. For some APIs these are provided
+free and are able to be used for essentially unlimited calls to an API.
+In other cases, a user may be limited in the number of calls allowed to
+an API or may even be charged for access to the APIs data. In any case,
+you **SHOULD ALWAYS KEEP YOUR API KEY PRIVATE!!!** The easiest way to do
+this when working on a project in Rstudio/github is to create a
+`.Renviron` file in your working directory for your project that stores
+your API key. You can then update your `gitignore` to include your
+`.Renviron` file, thereby allowing you to access your API key for use
+during calls to the API, while at the same time keeping your API key
+secret and preventing the key from being uploaded to github. You can
+also store other useful objects in `.Reviron`, such as a baseURL, that
+you can then access for use in different functions that you create to
+contact your API. This prevents having to rewrite the same baseURL over
+and over again, and can also allow you to easily update functions that
+use this baseURL if the API itself decides to change the baseURL
+required.
+
 ## Writing Functions to Contact the API
 
 We first need to write functions to contact the API an return
@@ -60,21 +86,33 @@ tackle error handling and allow for a more flexible user interface that
 allows the user to specify state by either the two letter state
 abbreviation, or the full state name.
 
-### `getParksData()` Function
+### Learning How to Create a Function to Contact and Return Data From an API
 
-The `getParksData` function demonstrates how to contact an API to return
-initial data from an endpoint using the `fromJSON` function from the
-`jsonlite` package. This function will allow a user to specify any
-endpoint from the National Parks Service API and return formatted data
-from that endpoint. The `getParksData()` function will format our
-request to the API with our specified endpoint, contact the API to
-return raw data from that endpoint, and then parse the returned data
+**NOTE: The purpose of the `getParksData()` function is to demonstrate
+how one would go about constructing a function to contact a user
+specified endpoint of an API and to return parsed data via the
+`fromJSON` function of the `jsonlite` package. As this function is for
+demonstration purposes only, we will not use it after this point in the
+vignette.**
+
+In order to contact an API a user must send a URL in the correct format
+during the call to the API. You can find specifics for how your API
+wants the URL request formatted by looking at the documentation for your
+API. The `getParksData` function provides an example of how we can
+construct our `searchURL` from the user specified `endpoint`. Knowing
+how to correctly format a URL from user input is the first step in
+writing functions to work with APIs. In this example, the `getParksData`
+function demonstrates how to contact an API to return initial data from
+an endpoint using the `fromJSON` function from the `jsonlite` package.
+This function will allow a user to specify any endpoint from the
+National Parks Service API and return formatted data from that endpoint.
+The `getParksData()` function will format our request to the API with
+the specified endpoint, contact the API to and return and parse the data
 into a more usable format.
 
 ``` r
 getParksData<- function(endpoint){
   # baseURL<-"https://developer.nps.gov/api/v1/"
-  endpoint<- endpoint
   limit<- "700"
   apiKey<-Sys.getenv("apiKey")
   baseURL<-Sys.getenv("baseURL")
@@ -83,6 +121,43 @@ getParksData<- function(endpoint){
   
   return(endpointData)
   }
+```
+
+### `getState` Helper Function
+
+The `getState` helper function will allow us to handle different types
+of inputs for our state value, including a two state abbreviation or a
+state name that are both not case sensitive. We want to allow a user to
+specify state using either a two letter state code or the full state
+name (not case sensitive). In addition to returning data on the
+specified state, it will also print a message alerting the user what
+state they are returning data on. If no state is specified the
+`getState` function will return a N`NULL` value for `retState`, which
+will be important when we use this helper function in future calls to
+the National Parks API. In a call to the API a `NULL` value for the
+state argument will return information on all states. The `getState`
+function will return an error message if a user did not specify a valid
+value for a state, and provide information about correct formatting for
+the state argument.
+
+``` r
+getState <- function(state) {
+  if(is.null(state)) {
+    return(NULL)
+  }
+  
+  retState <-NULL
+  
+  # State is a state name, find abbreviation.
+  if(str_to_title(state) %in% state.name) {
+    # Match state code with state name using state.abb and state.name built in to R.
+    retState <- state.abb[match(str_to_title(state),state.name)]
+  } else if(toupper(state) %in% state.abb) {
+    retState <- toupper(state)
+  } else {
+    stop("ERROR: Value for state argument was not a valid US state name or state two letter abbreiation. Try again. For example, NC or North Carolina will return campsites in North Carolina. NOTE: state argument is NOT case sensitive!")
+  }
+}
 ```
 
 When we look at the list that is returned with the `getParksData`
@@ -99,28 +174,27 @@ writing these types of functions.
 ### Contacting the `campgrounds` Endpoint
 
 This function allows user to access the `campgrounds` endpoint on the
-National Parks Service API. They can specify two arguments, one for
-`stateAbbreviation` and a second for `limitResultsTo`. If no information
-is entered for these, the default will return information for all states
-and limit the results to 40.
+National Parks Service API. They can specify three arguments, one for
+`stateAbbreviation`, a second for `limitResultsTo`, and a third for
+`searchTerm` that will allow a user to search by a certain term (this
+could be related to a type of activity, a park name, etc). If no
+information is entered for these, the default will return information
+for all states and limit the results to 40.
 
 ``` r
-getCampgrounds<- function(stateAbbreviation="", limitResultsTo="40"){
+getCampgrounds<- function(state=NULL, limitResultsTo="40", searchTerm=FALSE){
   # baseURL<-"https://developer.nps.gov/api/v1/campgrounds?"
   baseURL <- paste0(Sys.getenv("baseURL"), "campgrounds?")
-  state<- paste0("stateCode=", stateAbbreviation=stateAbbreviation)
-  
-  limit<- paste0("limit=", limitResultsTo=limitResultsTo)
-  
+  state<- paste0("stateCode=", getState(state))
+  limit<- paste0("limit=", limitResultsTo)
+  searchTerm <- paste0("q=", searchTerm)
   apiKey<-Sys.getenv("apiKey")
   # baseURL<-Sys.getenv("baseURL")
-  
-  searchURL<- paste0(baseURL,state,"&", limit, "&", apiKey)
-  
+  searchURL<- paste0(baseURL,state,"&", limit, "&", searchTerm, "&", apiKey)
   campgrounds<- fromJSON(searchURL)
   
   return(as_tibble(campgrounds$data))
-  }
+}
 ```
 
 Before we move on to the next step, let’s take a look at what this data
@@ -137,25 +211,25 @@ defaultSettings
 ```
 
     ## # A tibble: 40 × 31
-    ##    id     url   name  parkC…¹ descr…² latit…³ longi…⁴ latLong audio…⁵ isPas…⁶ passp…⁷ passp…⁸
-    ##    <chr>  <chr> <chr> <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <list> 
-    ##  1 EA81B… "htt… 277 … amis    17 sit… "29.51… "-100.… "{lat:… "17 si… 0       ""      <list> 
-    ##  2 1241C… ""    Abra… grsm    Abrams… "35.61… "-83.9… "{lat:… "Mount… 0       ""      <list> 
-    ##  3 ABDC6… "htt… Adir… cato    Reserv… "39.67… "-77.4… "{lat:… "The A… 0       ""      <list> 
-    ##  4 4F9ED… "htt… Afte… bica    - Near… "45.31… "-107.… "{lat:… ""      0       ""      <list> 
-    ##  5 9FAE9… "htt… Aker… ozar    Group … "37.37… "-91.5… "{lat:… ""      0       ""      <list> 
-    ##  6 6EAB2… "htt… Alam… orpi    Primit… "32.07… "-112.… "{lat:… "Alamo… 0       ""      <list> 
-    ##  7 AB15E… "htt… Alle… ozar    Campgr… "37.14… "-91.4… "{lat:… ""      0       ""      <list> 
-    ##  8 4F9E5… "htt… Alum… biso    Alum F… "36.76… "-84.5… "{lat:… "The c… 0       ""      <list> 
-    ##  9 B0B25… ""    Amer… amme    There … ""      ""      ""      ""      0       ""      <list> 
-    ## 10 E7CC7… "htt… Anac… chis    Primit… "34.01… "-119.… "{lat:… "This … 0       ""      <list> 
-    ## # … with 30 more rows, 19 more variables: geometryPoiId <chr>, reservationInfo <chr>,
-    ## #   reservationUrl <chr>, regulationsurl <chr>, regulationsOverview <chr>,
-    ## #   amenities <df[,14]>, contacts <df[,2]>, fees <list>, directionsOverview <chr>,
-    ## #   directionsUrl <chr>, operatingHours <list>, addresses <list>, images <list>,
-    ## #   weatherOverview <chr>, numberOfSitesReservable <chr>,
-    ## #   numberOfSitesFirstComeFirstServe <chr>, campsites <df[,8]>, accessibility <df[,13]>,
-    ## #   lastIndexedDate <chr>, and abbreviated variable names ¹​parkCode, ²​description, …
+    ##    id         url   name  parkC…¹ descr…² latit…³ longi…⁴ latLong
+    ##    <chr>      <chr> <chr> <chr>   <chr>   <chr>   <chr>   <chr>  
+    ##  1 EA81BC45-… "htt… 277 … amis    17 sit… "29.51… "-100.… "{lat:…
+    ##  2 1241C56B-… ""    Abra… grsm    Abrams… "35.61… "-83.9… "{lat:…
+    ##  3 ABDC6E2A-… "htt… Adir… cato    Reserv… "39.67… "-77.4… "{lat:…
+    ##  4 4F9ED6A5-… "htt… Afte… bica    - Near… "45.31… "-107.… "{lat:…
+    ##  5 9FAE941D-… "htt… Aker… ozar    Group … "37.37… "-91.5… "{lat:…
+    ##  6 6EAB2A34-… "htt… Alam… orpi    Primit… "32.07… "-112.… "{lat:…
+    ##  7 AB15EC6C-… "htt… Alle… ozar    Campgr… "37.14… "-91.4… "{lat:…
+    ##  8 4F9E59DF-… "htt… Alum… biso    Alum F… "36.76… "-84.5… "{lat:…
+    ##  9 B0B25595-… ""    Amer… amme    There … ""      ""      ""     
+    ## 10 E7CC7363-… "htt… Anac… chis    Primit… "34.01… "-119.… "{lat:…
+    ## # … with 30 more rows, 23 more variables:
+    ## #   audioDescription <chr>, isPassportStampLocation <chr>,
+    ## #   passportStampLocationDescription <chr>,
+    ## #   passportStampImages <list>, geometryPoiId <chr>,
+    ## #   reservationInfo <chr>, reservationUrl <chr>,
+    ## #   regulationsurl <chr>, regulationsOverview <chr>,
+    ## #   amenities <df[,14]>, contacts <df[,2]>, fees <list>, …
 
 **`getCampgrounds()` looking at California and limiting results to 20**
 
@@ -164,35 +238,35 @@ getCampgrounds("CA", 20)
 ```
 
     ## # A tibble: 20 × 31
-    ##    id     url   name  parkC…¹ descr…² latit…³ longi…⁴ latLong audio…⁵ isPas…⁶ passp…⁷ passp…⁸
-    ##    <chr>  <chr> <chr> <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <chr>   <list> 
-    ##  1 E7CC7… "htt… Anac… chis    Primit… 34.014… -119.3… {lat:3… "This … 0       ""      <list> 
-    ##  2 BC707… "htt… Atwe… seki    The ca… 36.464… -118.6… {lat:3… ""      0       ""      <list> 
-    ##  3 D82D2… "htt… Azal… seki    Azalea… 36.741… -118.9… {lat:3… ""      0       ""      <list> 
-    ##  4 07E7E… "htt… Bell… jotr    This s… 34.001… -116.0… {lat:3… "Belle… 0       ""      <list> 
-    ##  5 2AFC7… "htt… Bice… goga    Bicent… 37.824… -122.5… {lat:3… ""      0       ""      <list> 
-    ##  6 BF423… ""    Blac… moja    While … 35.048… -115.3… {lat:3… ""      0       ""      <list> 
-    ##  7 33AA5… "htt… Blac… jotr    This l… 34.072… -116.3… {lat:3… "The B… 0       ""      <list> 
-    ##  8 3EC42… "htt… Bran… whis    This t… 40.617… -122.5… {lat:4… "This … 0       ""      <list> 
-    ##  9 52046… "htt… Bran… whis    A secl… 40.617… -122.5… {lat:4… "Brand… 0       ""      <list> 
-    ## 10 58B95… "htt… Brid… yose    The Br… 37.663… -119.6… {lat:3… ""      0       ""      <list> 
-    ## 11 6BCF7… "htt… Buck… seki    Buckey… 36.522… -118.7… {lat:3… ""      0       ""      <list> 
-    ## 12 8AA8C… "htt… Butt… lavo    Butte … 40.564… -121.3… {lat:4… "Butte… 0       ""      <list> 
-    ## 13 8F36D… "htt… Camp… yose    Camp 4… 37.742… -119.6… {lat:3… ""      0       ""      <list> 
-    ## 14 3851B… "htt… Cany… seki    Canyon… 36.787… -118.6… {lat:3… ""      0       ""      <list> 
-    ## 15 14084… ""    Circ… samo    Circle… 34.111… -118.9… {lat:3… ""      0       ""      <list> 
-    ## 16 6EBE4… "htt… Coas… pore    Coast … 38.017… -122.8… {lat:3… "Coast… 0       ""      <list> 
-    ## 17 E43BE… "htt… Cold… seki    Nestle… 36.451… -118.6… {lat:3… ""      0       ""      <list> 
-    ## 18 9B5A7… "htt… Cott… jotr    The Co… 33.744… -115.8… {lat:3… "Cotto… 0       ""      <list> 
-    ## 19 B1396… "htt… Cran… yose    The Cr… 37.749… -119.8… {lat:3… ""      0       ""      <list> 
-    ## 20 4A67F… "htt… Crys… whis    The Cr… 40.6422 -122.6… {lat:4… "The C… 0       ""      <list> 
-    ## # … with 19 more variables: geometryPoiId <chr>, reservationInfo <chr>,
-    ## #   reservationUrl <chr>, regulationsurl <chr>, regulationsOverview <chr>,
-    ## #   amenities <df[,14]>, contacts <df[,2]>, fees <list>, directionsOverview <chr>,
-    ## #   directionsUrl <chr>, operatingHours <list>, addresses <list>, images <list>,
-    ## #   weatherOverview <chr>, numberOfSitesReservable <chr>,
-    ## #   numberOfSitesFirstComeFirstServe <chr>, campsites <df[,8]>, accessibility <df[,13]>,
-    ## #   lastIndexedDate <chr>, and abbreviated variable names ¹​parkCode, ²​description, …
+    ##    id         url   name  parkC…¹ descr…² latit…³ longi…⁴ latLong
+    ##    <chr>      <chr> <chr> <chr>   <chr>   <chr>   <chr>   <chr>  
+    ##  1 E7CC7363-… "htt… Anac… chis    Primit… 34.014… -119.3… {lat:3…
+    ##  2 BC707FA3-… "htt… Atwe… seki    The ca… 36.464… -118.6… {lat:3…
+    ##  3 D82D2D01-… "htt… Azal… seki    Azalea… 36.741… -118.9… {lat:3…
+    ##  4 07E7E764-… "htt… Bell… jotr    This s… 34.001… -116.0… {lat:3…
+    ##  5 2AFC7456-… "htt… Bice… goga    Bicent… 37.824… -122.5… {lat:3…
+    ##  6 BF423B82-… ""    Blac… moja    While … 35.048… -115.3… {lat:3…
+    ##  7 33AA5642-… "htt… Blac… jotr    This l… 34.072… -116.3… {lat:3…
+    ##  8 3EC422D6-… "htt… Bran… whis    This t… 40.617… -122.5… {lat:4…
+    ##  9 520460C8-… "htt… Bran… whis    A secl… 40.617… -122.5… {lat:4…
+    ## 10 58B9591C-… "htt… Brid… yose    The Br… 37.663… -119.6… {lat:3…
+    ## 11 6BCF7F8D-… "htt… Buck… seki    Buckey… 36.522… -118.7… {lat:3…
+    ## 12 8AA8C347-… "htt… Butt… lavo    Butte … 40.564… -121.3… {lat:4…
+    ## 13 8F36DEB6-… "htt… Camp… yose    Camp 4… 37.742… -119.6… {lat:3…
+    ## 14 3851B132-… "htt… Cany… seki    Canyon… 36.787… -118.6… {lat:3…
+    ## 15 14084144-… ""    Circ… samo    Circle… 34.111… -118.9… {lat:3…
+    ## 16 6EBE4D11-… "htt… Coas… pore    Coast … 38.017… -122.8… {lat:3…
+    ## 17 E43BEB8F-… "htt… Cold… seki    Nestle… 36.451… -118.6… {lat:3…
+    ## 18 9B5A7B2B-… "htt… Cott… jotr    The Co… 33.744… -115.8… {lat:3…
+    ## 19 B1396AAB-… "htt… Cran… yose    The Cr… 37.749… -119.8… {lat:3…
+    ## 20 4A67F766-… "htt… Crys… whis    The Cr… 40.6422 -122.6… {lat:4…
+    ## # … with 23 more variables: audioDescription <chr>,
+    ## #   isPassportStampLocation <chr>,
+    ## #   passportStampLocationDescription <chr>,
+    ## #   passportStampImages <list>, geometryPoiId <chr>,
+    ## #   reservationInfo <chr>, reservationUrl <chr>,
+    ## #   regulationsurl <chr>, regulationsOverview <chr>,
+    ## #   amenities <df[,14]>, contacts <df[,2]>, fees <list>, …
 
 ## Data Exploration
 
@@ -251,6 +325,13 @@ campSize<- function(outputgetCampgrounds){
 
 ### `cleaningData` Funtion
 
+The `cleaningData` function will convert the variables listed below from
+character (how they were read in) to numeric so that we can perform some
+exploratory data analysis.The variables that we will convert from
+character to numeric are:
+
+-   `campsites$walkBoatTo`
+
 ``` r
 cleaningData<- function(campSizeOutput, characterVector){
   CampgroundData<- campSizeOutput%>%
@@ -275,7 +356,7 @@ Test `getCampgrounds()` function with user specifications of
 `stateAbbreviation` of `CA` and `limitResultsTo` of `30`.
 
 ``` r
-testCampResultsCA100<-getCampgrounds(stateAbbreviation = "CA", limitResultsTo = "100")
+testCampResultsCA100<-getCampgrounds(state = "CA", limitResultsTo = "100")
 
 #CAcamp<-testCampResultsCA100%>%
 #  mutate(
@@ -350,7 +431,7 @@ ggplot(CAnum, aes(x=campgroundSize))+
   geom_bar(aes(fill=campStore))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ### Creating a Histogram
 
@@ -361,7 +442,7 @@ ggplot(CAnum, aes(x=totalSites)) +
   geom_histogram(binwidth = 20)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ### Creating a Boxplot
 
@@ -379,4 +460,4 @@ plot1<- ggplot(CAnum, aes(x=totalSites, y=reservable, color=cellService)) +
 plot1
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
