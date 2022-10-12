@@ -2,15 +2,11 @@
 title: "National Parks API Vignette"
 author: "Kelley Breeze and Zhiyuan Yang"
 date: "2022-09-22"
-output:
-  pdf_document:
-    toc: yes
-  html_document:
-    toc: yes
-    toc_float: yes
+output:  
+  html_document
 ---
 
-```{r setup, include=TRUE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -29,6 +25,8 @@ In order to follow along with this vignette, the user will need to load the foll
 3.  The `stringr` package will help with error handling for our state names/abbreviations. We can use this to work with strings provided by the user to the state argument to help identify and reformat user provided information.  
 
 
+In addition to the libraries listed above the user will need to create their own `.Renviron` file to store their private API Key to protect it from accidentally being shared publicly on github. You will want to make sure that you add `.Renviron` to your `.gitignore` file so that it will not be committed to github. Within the `.Renviron` file you can store your API key using the following line of code: `apiKey="YourNPSAPIKey"`. More detail on API keys and the `.Renviron` file can be found below in the **Quick Note About API Keys and `.Renviron`** section.
+
 ```{r}
 library(jsonlite)
 library(tidyverse)
@@ -39,13 +37,22 @@ library(stringr)
 
 **Background Information on the National Parks Service API**
 
-For this vignette we are using the [National Parks Service's API](https://www.nps.gov/subjects/developer/api-documentation.htm). This API is designed to provide data about US National Parks and their facilities, events, news, alerts, activities, and much more. With over 20 different endpoints, this API provides a wide array of different types of data that one might be interested in working with when trying to learn about how to interact with and use APIs in R. Users do need an API key (provided for free if you register) to use the National Parks API. It returns data in the form of JSON files only.  
+For this vignette we are using the [National Parks Service's API](https://www.nps.gov/subjects/developer/api-documentation.htm). This API is designed to provide data about US National Parks and their facilities, events, news, alerts, activities, and much more. With over 20 different endpoints, this API provides a wide array of different types of data that one might be interested in working with when trying to learn about how to interact with and use APIs in R. Users do need an API key (provided for free if you register) to use the National Parks API. It returns data JSON format only.  
 
 
 ## A Quick Note About API Keys and `.Renviron` 
 
 
-Most APIs will require a user to enter an API key when contacting the API. An API key is unique to each user. For some APIs these are provided free and are able to be used for essentially unlimited calls to an API. In other cases, a user may be limited in the number of calls allowed to an API or may even be charged for access to the APIs data. In any case, you **SHOULD ALWAYS KEEP YOUR API KEY PRIVATE!!!** The easiest way to do this when working on a project in Rstudio/github is to create a `.Renviron` file in your working directory for your project that stores your API key. You can then update your `gitignore` to include your `.Renviron` file, thereby allowing you to access your API key for use during calls to the API, while at the same time keeping your API key secret and preventing the key from being uploaded to github. You can also store other useful objects in `.Reviron`, such as a baseURL, that you can then access for use in different functions that you create to contact your API. This prevents having to rewrite the same baseURL over and over again, and can also allow you to easily update functions that use this baseURL if the API itself decides to change the baseURL required. 
+Most APIs will require a user to enter an API key when contacting the API. An API key is unique to each user. For some APIs these are provided free and are able to be used for essentially unlimited calls to an API. In other cases, a user may be limited in the number of calls allowed to an API or may even be charged for access to the APIs data. In any case, you **SHOULD ALWAYS KEEP YOUR API KEY PRIVATE!** The easiest way to do this when working on a project in Rstudio/github is to create a `.Renviron` file in your working directory for your project that stores your API key. You can then update your `.gitignore` to include your `.Renviron` file, thereby allowing you to access your API key for use during calls to the API, while at the same time keeping your API key secret and preventing the key from being uploaded to github. You can add files directly to your `.gitignore` file or you can use menu options in RStudio.  
+
+
+<center>
+
+![**Adding file to .gitignore using menu option in RStudio**](gitignoreMenu.png)  
+
+</center>
+
+You can also store other useful objects in `.Reviron`, such as a baseURL, that you can then access for use in different functions that you create to contact your API. This prevents having to rewrite the same baseURL over and over again, and can also allow you to easily update functions that use this baseURL if the API itself decides to change the baseURL required. 
 
 
 ## Writing Functions to Contact the API 
@@ -57,25 +64,58 @@ We first need to write functions to contact the API an return well-formatted, pa
 ### Learning How to Create a Function to Contact and Return Data From an API  
 
 
-**NOTE: The purpose of the `getParksData()` function is to demonstrate how one would go about constructing a function to contact a user specified endpoint of an API and to return parsed data via the `fromJSON` function of the `jsonlite` package. As this function is for demonstration purposes only, we will not use it after this point in the vignette.**  
+**NOTE: The purpose of the `getEndpointData()` function is to demonstrate how one would go about constructing a function to contact a user specified endpoint of an API and to return parsed data via the `fromJSON` function of the `jsonlite` package. As this function is for demonstration purposes only, we will not use it after this point in the vignette.**  
 
-In order to contact an API a user must send a URL in the correct format during the call to the API. You can find specifics for how your API wants the URL request formatted by looking at the documentation for your API. The `getParksData` function provides an example of how we can construct our `searchURL` from the user specified `endpoint`. Knowing how to correctly format a URL from user input is the first step in writing functions to work with APIs. In this example, the `getParksData` function demonstrates how to contact an API to return initial data from an endpoint using the `fromJSON` function from the `jsonlite` package. This function will allow a user to specify any endpoint from the National Parks Service API and return formatted data from that endpoint. The `getParksData()` function will format our request to the API with the specified endpoint, contact the API to and return and parse the data into a more usable format. 
+In order to contact an API a user must send a URL in the correct format during the call to the API. You can find specifics for how your API wants the URL request formatted by looking at the documentation for your API. The `getEndpointData()` function provides an example of how we can construct our `searchURL` from the user specified `endpoint`. Knowing how to correctly format a URL from user input is the first step in writing functions to work with APIs. Notice that within the `getEndpointData()` function we are using `Sys.getenv()` to access our `apiKey` and our `baseURL` that have been stored in our `.Renviron` file. This protects the privacy of our API key and makes later changes to our baseURL much easier to handle. In this example, the `getEndpointData()` function demonstrates how to contact an API to return initial data from an endpoint using the `fromJSON()` function from the `jsonlite` package. This function will allow a user to specify any endpoint from the National Parks Service API and return formatted data from that endpoint. The `getEndpointData()` function will format our request to the API with the specified endpoint, contact the API to and return and parse the data into a more usable format.  
+
 
 ```{r}
-getParksData<- function(endpoint){
-  # baseURL<-"https://developer.nps.gov/api/v1/"
-  limit<- "700"
+getEndpointInfo<- function(endpoint){
+  limit<- "50"
   apiKey<-Sys.getenv("apiKey")
   baseURL<-Sys.getenv("baseURL")
-  searchURL<- paste0(baseURL, endpoint, "?","&", limit,"&", apiKey)
-  endpointData<- fromJSON(searchURL)
+  searchURL<- paste0(baseURL, endpoint, "?","&", apiKey)
+  #At this point we have built our URL query string given the user input of endpoint. If we were returning data from the activities endpoint the searchURL that the function is generating at this point looks like the code below:
   
-  return(endpointData)
+  #https://developer.nps.gov/api/v1/activities?api_key=YOUR_API_KEY
+  
+  #We then use this URL to return the data we want from our API using the fromJSON function from the jsnolite package.
+  endpointInfo<- fromJSON(searchURL)
+  
+  return(endpointInfo)
   }
 ```
 
 
+Let's see what the data looks like from the `getEndpointInfo()` function. When we use the `str()` function to take a look at what our function returns on our `actitivites` endpoint, we can see the it returns a list of 4 elements containing our total results(`40`), the limit of the number of results that would be returned (`50`), the start of our results (`0`), and then our `data`. This shows that to access the information that we need from this endpoint we need to specify to return `activities$data` in our function. Lets revise our initial function so that we are only returning the `data` element of our endpoint.
 
+```{r}
+str(getEndpointInfo("activities"))
+```
+
+
+**Updated to return just our `data` element from our specified endpoint.
+```{r}
+getEndpointData<- function(endpoint){
+  limit<- "50"
+  apiKey<-Sys.getenv("apiKey")
+  baseURL<-Sys.getenv("baseURL")
+  searchURL<- paste0(baseURL, endpoint, "?", "&", apiKey)
+  endpointData<- fromJSON(searchURL)
+  
+  return(endpointData$data)
+  }
+```
+
+
+**Ok, now to look again to see what the new returned results look like from our `getEndPointData` function.**
+
+```{r}
+str(getEndpointData("activities"))
+```
+
+
+We can see that the updated function will return a dataframe object from the `activities` endpoint with 40 observations on two variables, in this case the activity `id` and the activity `name`. We have successfully returned only the `data` portion from the `actitivites` endpoint. This is what we will want to work with from our endpoints when we move on to the data exploration and analysis steps. Again, the `getEndpointInfo()` and `getEndpointData()` functions written here are simply to demonstrate how you would want to construct a simple call to an API. We will not be using these specific functions going forward in the vignette, although the `getEndpointData()` function was very convenient for quickly looking through the types of information found at each endpoint and allowing us to narrow down which endpoints might be good to use for our data exploration and analysis steps.  
 
 
 
@@ -83,7 +123,7 @@ getParksData<- function(endpoint){
 ### `getState` Helper Function  
 
 
-The `getState` helper function will allow us to handle different types of inputs for our state value, including a two state abbreviation or a state name that are both not case sensitive. We want to allow a user to specify state using either a two letter state code or the full state name (not case sensitive). In addition to returning data on the specified state, it will also print a message alerting the user what state they are returning data on. If no state is specified the `getState` function will return a N`NULL` value for `retState`, which will be important when we use this helper function in future calls to the National Parks API. In a call to the API a `NULL` value for the state argument will return information on all states. The `getState` function will return an error message if a user did not specify a valid value for a state, and provide information about correct formatting for the state argument.  
+The `getState` helper function will allow us to handle different types of inputs for our state value, including a two state abbreviation or a state name that are both not case sensitive. We want to allow a user to specify state using either a two letter state code or the full state name (not case sensitive). If no state is specified the `getState` function will return a `NULL` value for `retState`, which will be important when we use this helper function in future calls to the National Parks API. In a call to the National Parks API, a `NULL` value for the state argument will return information on all states. The `getState` function will return an error message if a user did not specify a valid value for a state, and provide information about correct formatting for the state argument.  
 
 
 ```{r}
@@ -108,60 +148,197 @@ getState <- function(state) {
 
 
 
+### Contacting the `parks` Endpoint and Allowing for Modifications  
 
 
-When we look at the list that is returned with the `getParksData` function, we can see that the data of interest is stored in a list element called `data` Now that we know that our data is stored in the list element called `data` we can go ahead and create a function to further parse the data into topics of interest. In this example we are returning data from the `campgrounds` endpoint of the National Parks Service API, but we can use the same basic format to return data from other endpoints, we just need to look at the documentation from the API to understand the types of information that we need to enter when writing these types of functions.
-
-
-### Contacting the `campgrounds` Endpoint  
-This function allows user to access the `campgrounds` endpoint on the National Parks Service API. They can specify three arguments, one for `stateAbbreviation`, a second for `limitResultsTo`, and a third for `searchTerm` that will allow a user to search by a certain term (this could be related to a type of activity, a park name, etc). If no information is entered for these, the default will return information for all states and limit the results to 40.  
+The `parks` endpoint on the National Parks API returns information about the national parks including addresses, contacts, hours of operation, websites, activities and more. The `getParksInfo` function contacts the `parks` endpoint and allows the user to enter up to three modifications of that endpoint. The modifications available for the `parks` endpoint allow a user to specify the state returned (`state`), specify the number of results returned (`limit`), and to enter a search term to apply (such as hiking or mountains) that will return data from the API that match the `searchTerm` entered. The default value for the `state` modification is `NULL`, which will result in data from all states being returned. The default value for the `limit` modification is `30`, which will limit the results returned to 30. The default value for the `searchTerm` modification is `NULL`, and will return results from the `parks` endpoint without limiting by a `searchTerm`. Note that we are using the `getState()` function to ensure that the state value entered is a valid value and to return an error if a non-state is entered. We are also relying on our `.Renviron` file to retrieve our `baseURL` and our `apiKey`.  
 
 
 ```{r}
-getCampgrounds<- function(state=NULL, limitResultsTo="40", searchTerm=FALSE){
-  # baseURL<-"https://developer.nps.gov/api/v1/campgrounds?"
-  baseURL <- paste0(Sys.getenv("baseURL"), "campgrounds?")
-  state<- paste0("stateCode=", getState(state))
-  limit<- paste0("limit=", limitResultsTo)
-  searchTerm <- paste0("q=", searchTerm)
-  apiKey<-Sys.getenv("apiKey")
-  # baseURL<-Sys.getenv("baseURL")
-  searchURL<- paste0(baseURL,state,"&", limit, "&", searchTerm, "&", apiKey)
-  campgrounds<- fromJSON(searchURL)
+getParksInfo <- function(state=NULL, limit=30, searchTerm=NULL) {
+  searchURL <- paste0(Sys.getenv("baseURL"), "parks?", Sys.getenv("apiKey"), "&")
+
+  searchState <- getState(state)
   
-  return(as_tibble(campgrounds$data))
+  if(!is.null(searchState)) {
+    searchURL <- paste0(searchURL, "stateCode=", searchState, "&")
+  }
+  
+  searchURL <- paste0(searchURL, "limit=", limit, "&")
+  
+  if(!is.null(searchTerm)){
+    searchURL<- paste0(searchURL, "q=", searchTerm)
+  }
+
+  parks<- fromJSON(searchURL)
+  
+  return(parks$data)
 }
 ```
 
 
-Before we move on to the next step, let's take a look at what this data looks like when returned using the `getCampgrounds()` function using defaults and when a user specifies a state and number of results to return. 
+#### Testing `getParksInfo()` Function with Different Modifications  
+
+
+**Using `getParksInfo()` with the default values for `state`, `limit`, and `searchTerm`.**  
+```{r}
+getParksDefault<- getParksInfo()
+
+head(getParksDefault)
+```
+
+
+**Using `getParksInfo()` with the default values for `state`, `limit`, and specifying `searchTerm="redwoods"`.**  
+
+```{r}
+getParksRedwoods<-getParksInfo(searchTerm = "redwoods")
+
+getParksRedwoods
+```
+
+
+**Using `getParksInfo()` entering `"california"` for the `state` value, `100` for the `limit`, and using the default value for the `searchTerm`.**  
+
+
+```{r}
+getParksCA100<-getParksInfo(state = "california", limit = 100)
+
+head(getParksCA100)
+```
+
+
+
+### Contacting the `events` Endpoint and Allowing for Modifications  
+
+
+```{r}
+getEvents <- function(state=NULL, pageSize=5, searchTerm=NULL) {
+  searchURL <- paste0(Sys.getenv("baseURL"), "events?", Sys.getenv("apiKey"), "&")
+  
+  searchState <- getState(state)
+  
+  if(!is.null(searchState)) {
+    searchURL <- paste0(searchURL, "stateCode=", searchState, "&")
+  }
+  
+  searchURL <- paste0(searchURL, "pageSize=", pageSize, "&")
+  
+  if(!is.null(searchTerm)){
+    searchURL<- paste0(searchURL, "q=", searchTerm)
+  }
+  
+  events<- fromJSON(searchURL)
+  
+  return(events$data)
+}
+```
+
+
+
+### Contacting the `thingstodo` Endpoint and Allowing for Modifications  
+
+
+The `thingstodo` endpoint has information on suggested things to do recommended by and for specific national parks. The `getThingsToDo()` function will allow the user up to three modifications on this endpoint. The user can specify a state, specify the maximum number of results returned, and also search the things to do by a specific term (for example, families may want to search by "kids" to find things to do that are recommended for kids). 
+```{r}
+getThingsToDo <- function(state=NULL, limit=60, searchTerm=NULL) {
+  searchURL <- paste0(Sys.getenv("baseURL"), "thingstodo?", Sys.getenv("apiKey"), "&")
+  
+  searchState <- getState(state)
+  
+  if(!is.null(searchState)) {
+    searchURL <- paste0(searchURL, "stateCode=", searchState, "&")
+  }
+  
+  searchURL <- paste0(searchURL, "limit=", limit, "&")
+  
+  if(!is.null(searchTerm)){
+    searchURL<- paste0(searchURL, "q=", searchTerm)
+  }
+  
+  thingsToDo<- fromJSON(searchURL)
+  
+  return(thingsToDo$data)
+}
+```
+
+
+Let's see an example of what data will look like when returned from the `thingstodo` endpoint with a couple of modifications using our function. The modifications here will return up to 200 results that match our `searchTerm` `"kids"`. Because we did not enter a state and instead relied on the default `state` value, we will be returning data from all states. The `searchTerm = "kids"` will return `141` results from our API, we can see the first 6 that are returned below.
+
+
+```{r}
+thingsToDoKids<- getThingsToDo(limit = 200, searchTerm = "kids")
+
+head(thingsToDoKids)
+```
+
+
+### Contacting the `campgrounds` Endpoint and Allowing for Modifications  
+
+
+This function allows user to access the `campgrounds` endpoint on the National Parks Service API. They can specify three modifications of this endpoint, one for `state`, a second for `limit`, and a third for `searchTerm` that will allow a user to search by a certain term (this could be related to a type of activity, a park name, etc). If no information is entered for these, the default will return information for all states (`state=NULL`), will `limit` the results to `40`, and the default value for `searchTerm` will also be `NULL`, which will not limit our returned results by any term.  
+
+
+```{r}
+getCampgrounds <- function(state=NULL, limit=40, searchTerm=NULL) {
+  searchURL <- paste0(Sys.getenv("baseURL"), "campgrounds?", Sys.getenv("apiKey"), "&")
+  
+  searchState <- getState(state)
+  
+  if(!is.null(searchState)) {
+    searchURL <- paste0(searchURL, "stateCode=", searchState, "&")
+  }
+  
+  searchURL <- paste0(searchURL, "limit=", limit, "&")
+  
+  if(!is.null(searchTerm)){
+    searchURL<- paste0(searchURL, "q=", searchTerm)
+  }
+  
+  campgrounds<- fromJSON(searchURL)
+  
+  return(campgrounds$data)
+}
+```
+
+
+Before we move on to the next step, let's take a look at what our data looks like when returned using the`getCampgrounds()` function:  
+
+
+1.  Using defaults  
+2.  When a user specifies a state and number of results to return  
+3.  When a user specifies a `searchTerm`  
 
 **`getCampgrounds()` using defaults**
 ```{r}
-defaultSettings<-getCampgrounds()
-
-defaultSettings
+head(getCampgrounds())
 ```
 
 
 **`getCampgrounds()` looking at California and limiting results to 20**
 
 ```{r}
-getCampgrounds("CA", 20)
+head(getCampgrounds("CA", 20))
+```
+
+
+**`getCampgrounds()` using the `searchTerm="redwoods"`**
+
+```{r}
+getCampgrounds(searchTerm = "redwoods")
 ```
 
 
 ## Data Exploration
 
 
-Next, we will walk through some basic exploratory data analysis. In the data exploration steps we will demonstrate:  
+Next, we will walk through some basic exploratory data analysis. For this section we will focus on data that we will collect from the `campgrounds` endpoint, using the `getCleanCampground()` function that we will create below. In the data exploration steps we will demonstrate:  
 
 
-1.  How to pull data from at least two calls to our data obtaining function.  
-2.  How to create a new variable that is a function of other variables.  
+1.  How to pull data from multiple calls to our data obtaining function (using our `getCleanCampground()` function).  
+2.  How to create a new variable that is a function of other variables (our `cleaningData()` function).  
 3.  How to create contingency tables based on data returned from the API.  
 4.  How to create numerical summaries for quantitative variables at each setting of a categorical variable.  
-5.  How to create plots with nice labels and titles, utilizing coloring, grouping, faceting, etc. and including the following plot types:  
+5.  How to create plots with nice labels and titles, utilizing coloring, grouping, etc. and including the following plot types:  
     +  Bar plots  
     +  Histograms  
     +  Box plots  
@@ -176,43 +353,30 @@ Next, we will walk through some basic exploratory data analysis. In the data exp
 The data from the API needs some reformatting before it can be used for our analysis. All data was read in as character data, so we will need to coerce some of this data to numeric for our analysis. We also want to demonstrate how you might create some new variables from existing variables. We will do this in a couple of different ways, through the creation of a new variable for campground size (small, medium, or large) as well as creating new variables for `cellService` and `campStore` that will be factors with specified levels.  
 
 
-### How to Create New Varaibles  
-Create a new numeric variable for `totalSites` from the previous character vector `campsites$totalSites`. Using the new `totalSites` variable, create a new campsite size variable `campgroundSize` that classifies campsites as small if there are fewer than 50 campsites, medium if there are between 50 and 100 campsites, and large if there are more that 100 campsites.
-```{r}
-campSize<- function(outputgetCampgrounds){
-  campgroundSize<- outputgetCampgrounds%>%
-      mutate(
-    totalSites = (as.numeric(campsites$totalSites)
-  ),
-  campgroundSize = if_else(totalSites>100, "large",
-                         if_else(totalSites>50, "medium", "small")))
 
-  return(campgroundSize)
-}
+### Creating Variables with the `cleaningData` Funtion  
 
-```
-
-### `cleaningData` Funtion  
-
-The `cleaningData` function will convert the variables listed below from character (how they were read in) to numeric so that we can perform some exploratory data analysis.The variables that we will convert from character to numeric are:  
-
-+  `campsites$walkBoatTo`  
+The `cleaningData` function will take the output from the `getCampgrouns()` function and create new numeric variables from the variables `walkBoatTo`, `rvOnly`, `electricalHookups`, `numberOfSitesReservable`, `numberOfSitesFirstComeFirstServe`, and `totalSites`. The purpose of this is to transform character data (how these variables were read in) to numeric data so that we can perform some exploratory data analysis. We will also convert two variables (`cellService` and `campStore`) to factors with 4 levels each. This function will also use the new `totalSites` numeric variable to create a new campsite size variable `campgroundSize` that classifies campgrounds as small if there are fewer than 50 campsites, medium if there are between 50 and 100 campsites, and large if there are more that 100 campsites.
 
 
 ```{r}
-cleaningData<- function(campSizeOutput, characterVector){
-  CampgroundData<- campSizeOutput%>%
+cleaningData<- function(getCampgroundsOutput){
+  CampgroundData<- getCampgroundsOutput%>%
     mutate(
-      boatOrWalk = (as.numeric(campsites$walkBoatTo)),
-      RVonly = (as.numeric(campsites$rvOnly)),
-      electric = (as.numeric(campsites$electricalHookups)),
-      reservable = (as.numeric(numberOfSitesReservable)),
-      noReservation = (as.numeric(numberOfSitesFirstComeFirstServe)),
-      cellService = (as.factor(amenities$cellPhoneReception)),
-      campStore = (as.factor(amenities$campStore)),
-      totalSites = (as.numeric(campsites$totalSites)),
-      campgroundSize = if_else(totalSites>100, "large",
-                         if_else(totalSites>50, "medium", "small"))
+      boatOrWalk = as.numeric(campsites$walkBoatTo),
+      RVonly = as.numeric(campsites$rvOnly),
+      electric = as.numeric(campsites$electricalHookups),
+      reservable = as.numeric(numberOfSitesReservable),
+      noReservation = as.numeric(numberOfSitesFirstComeFirstServe),
+      cellService = factor(amenities$cellPhoneReception, 
+                            levels=c("", "No", "Yes - seasonal", "Yes - year round"), 
+                            labels = c("Uknown", "No Cell Service", "Seasonal Cell Service", "Year Round Cell Service")),
+      campStore = factor(amenities$campStore, 
+                          levels=c("", "No", "Yes - seasonal", "Yes - year round"), 
+                          labels = c("Uknown", "No Camp Store", "Seasonal Camp Store", "Year Round Camp Store" )),
+      totalSites = as.numeric(campsites$totalSites),
+      campgroundSize = if_else(totalSites>100, "Large",
+                         if_else(totalSites>50, "Medium", "Small"))
       )
     
   return(CampgroundData)
@@ -221,101 +385,238 @@ cleaningData<- function(campSizeOutput, characterVector){
 
 
 
+### `getCleanCampground()` Wrapper Function  
 
-
-Test `getCampgrounds()` function with user specifications of `stateAbbreviation` of `CA` and `limitResultsTo` of `30`.
-
+Next, we will combine our `getCampgrounds()` function and our `cleaningData()` function into one call that will allow us to return data that can be easily used for our data exploration.
 ```{r}
-testCampResultsCA100<-getCampgrounds(state = "CA", limitResultsTo = "100")
-
-#CAcamp<-testCampResultsCA100%>%
-#  mutate(
-#    sites = as.numeric(numberOfSitesReservable)
-#  )
-
-
-#totalSites<- testCampResultsCA100%>%
-#  mutate(
-#    totalSites = as.numeric(campsites$totalSites)
-#  )
+getCleanCampground<- function(state=NULL, limit=50, searchTerm=NULL){
+  campgroundData<- getCampgrounds(state, limit, searchTerm)
+  cleanCampData<- cleaningData(campgroundData)
+  
+  return(cleanCampData)
+}
 ```
 
 
 
-
-
-### Numerical Summaries
-We are going to look at some numeric summaries related to our campsite data.  The first thing that we want to do is to use our `cleaningData` function to make sure that we have numeric data to work with for our numerical summaries.
-
+Let's test this out to make sure things are working as expected. Here we are specifying the state as California and that we want to limit the results to 100. Everything looks good, so we are ready to move on to working with the data from our API!
 ```{r}
-CAnum<-cleaningData(testCampResultsCA100)
+head(getCleanCampground("CA", limit = 100))
 ```
 
-Ok, so now let's look at some numeric summaries for `totalSites` across each setting of our `campgroundSize` variable.  
+
+### Pulling Data From the API Using Our Data Obtaining Function `getCleanCampground()`  
+
+
+The code below sets up a few calls to our data obtaining function `getCleanCampground()`. We will use our `getCleanCampground()` function to contact the `campgrounds` endpoint on National Parks API, and return and clean our data so that we will be able to do numerical summaries and other data analysis. We will limit our data exploration to the `campgrounds` endpoint, but this should give a good idea of how you could go about data exploration using an endpoint of your choosing. In the calls listed below we will create data frames for later use throughout the data exploration phase that have the following modifications:  
+
+
+1.  `campgroundsCA` will contain data on all National Parks campgrounds in California. In the call to the API we will specify the `state` as `california` and set the limit of results returned to `100`. We will not enter a `searchTerm` for this example.  
+1.  `campgroundsTX` will contain data on all National Parks campgrounds in Texas. In the call to the API we will specify the `state` as `TX` and set the limit of results returned to `100`. We will not enter a `searchTerm` for this example.  
+3.  `campgroundAll` will contain data on all National Parks campgrounds in the country. The only input we need to enter here is `limit=700` in order to return the complete dataset.  
+4.  `campgoundMountains` will return data on all national parks campgrounds in the country that match our `searchTerm="mountains"`. We have set the `limit` of the results to `200` to make sure that we are returning all campgrounds that match our search criteria.  
+
 
 ```{r}
-campSizeSum<- CAnum%>%
+campgroundsCA<-getCleanCampground("california", 100)
+
+campgroundAll<- getCleanCampground(limit = 700)
+
+campgroundsTX<- getCleanCampground("TX", 100)
+
+campgroundMountains<-getCleanCampground(limit = 200, searchTerm = "mountains")
+```
+
+
+## Numerical Summaries  
+
+
+We are going to look at some numerical summaries related to our campsite data. We want to see how to create numerical summaries for quantitative variables at each setting of a categorical variable. One easy way to achieve this goal is by using `group_by()` with the `summarise()` function. There are four different examples below. These examples are meant to demonstrate how to write the code to create these types of summaries for different variables, and so we will not spend too much time analyzing the results.
+
+
+
+### Creating Numerical Summaries for Quantivative Variables at Each Setting of a Categorical Variable  
+
+Ok, so now let's look at some numeric summaries for `totalSites` across each setting of our `campgroundSize` variable. We will first look at this information for campsites in California, and then we will look at the same summaries for all campsites in the country combined.  
+
+
+**Mean, Median and Standard Deviation of Total Campsites by Campground Size in California**
+
+We can see that the mean number of campsites at `Large` campgrounds is just under `160`, for `Medium` campgrounds the mean is about `77`, and for `Small` campgrounds the mean is `17.5`. We can compare the mean values to the median values across our data and it tells us that there is a larger positive skew in the data for our `Large` campgrounds, likely due to a large outlier in the data in the `Large` campground group.
+```{r}
+campCASizeSum<- campgroundsCA%>%
   group_by(campgroundSize)%>%
-  summarise(avg = mean(totalSites), med = median(totalSites), sd = sd(totalSites))
+  summarise("Mean Number of Sites" = mean(totalSites), "Median Number of Sites" = median(totalSites), SD = sd(totalSites))
 
-campSizeSum
+campCASizeSum
+```
+
+**Mean, Median and Standard Deviation of Total Campsites by Campground Size in the United States**  
+
+
+Here we can see an even bigger difference between mean number of campsites and median number of campsites at `Large` campgrounds. This is due to one large outlier in the dataset, which is a campground called `Lone Rock Beach Primitive Camping Area` with `totalSites` of `5000`. More will be discussed about this outlier in the histogram portion of the vignette.
+```{r}
+campAllSizeSum<- campgroundAll%>%
+  group_by(campgroundSize)%>%
+  summarise("Mean Number of Sites" = mean(totalSites), "Median Number of Sites" = median(totalSites), SD = sd(totalSites))
+
+campAllSizeSum
 ```
 
 
 
+Next we will look at numerical summaries for the `totalSites` variable across the different settings of our `cellService` variable. Remember, the `cellService` variable was converted to a factor variable with four levels (`Uknown`, `No Cell Service`, `Seasonal Cell Service`, and `Year Round Cell Service`) by the `cleaningData()` function, which was used in the `getCleanCampground()` wrapper function.  
+
+
+**Mean, Median and Standard Deviation of Total Campsites by Cell Service Coverage in the United States**
+
+When we look at these summaries we can see some strange things when comparing our mean and median values. The `cellService` variable has a lot of values for `totalSites` in all categories (`Uknown`, `No Cell Service`, `Seasonal Cell Service`, and `Year Round Cell Service`) of `0`, which is causing our median to be so much lower than the mean in this example. In addition, we can see that the `SD` value for all levels of our `cellService` variable is fairly high. While it is unexpected that so many `totalSites` would have a value of `0`, particularly given that we are pulling data on `campgrounds` endpoint, this is an anomaly in the `totalSites` variable in our dataset. Even though the data was stored in a variable called `totalSites` when it was returned from the API, these are not in fact the total number of all campsites within a particular campground. We perhaps would not have discovered this without this initial data exploration into some numberic summaries of our `totalSites` variable.  
+```{r}
+campAllCellSum<- campgroundAll%>%
+  group_by(cellService)%>%
+  summarise("Mean Number of Sites" = mean(totalSites), "Median Number of Sites" = median(totalSites), SD = sd(totalSites))
+
+campAllCellSum
+```
+
+
+**Mean, Median and Standard Deviation of Total Campsites by Cell Service Coverage in Texas**
+
+Here we can see that Texas does not have any campgrounds with `Seasonal Cell Service`, and so that factor is not included on our summary table. We can also see that our mean and median values are much closer together. If we look at the dataset itself we can see that there are no values in our dataset when the number of campsites is 0.  
+```{r}
+campTXCellSum<- campgroundsTX%>%
+  group_by(cellService)%>%
+  summarise("Mean Number of Sites" = mean(totalSites), "Median Number of Sites" = median(totalSites), SD = sd(totalSites))
+
+campTXCellSum
+```
 
 
 
 ### Contingency Tables
 
-Next let's see how to create a contingency table from our data using the `table()` function. Here we are creating a contingency table looking at our `campStore` and `campgroundSize` variables.
+Next let's see how to create a contingency table from our `campgroundCA` data using the `table()` function. Here we are creating a contingency table looking at our `campStore` and `campgroundSize` variables from our `campgroundsCA` data. We can see that across all categories it is much more common for campgrounds to no camp store than to have either a seasonal or year round camp store.  
 ```{r}
-table(CAnum$campgroundSize, CAnum$campStore)
+table(campgroundsCA$campgroundSize, campgroundsCA$campStore)
+```
+
+Let's compare this to the same contingency table for all national parks (not just national parks in California) using the `campgroundsAll` data.  Here we can see the same trends as we saw in the previous table, with it being more likely that a campground will not have a store than it will have a camp store. We can also see in these tables that the chances of having a camp store are higher given you are looking at a large campground as compared to the chances of having a camp store given that you are looking at a small campground.
+
+```{r}
+table(campgroundAll$campgroundSize, campgroundAll$campStore)
 ```
 
 
-## Creating Numerical Summaries for Quantivative Variables at Each Setting of a Categorical Variable  
 
 
 ## Data Visualization with `ggplot2`  
 
 
 
-### Creating a Bar Plot  
+### Creating Bar Plots  
 
-Let's create a bar plot to visualize the information from our contingency table. Here we can see the number of campgrounds in each of our `camgroundSize` categories, as well as visualize how this relates to our `campStore` variable.
+Let's create a bar plot to visualize the information from our California campground and camp store contingency table from above. Here we can see the number of campgrounds in each of our `camgroundSize` categories, as well as visualize how this relates to our `campStore` variable. We can easiliy see that the majority of campgrounds do not have a camp store, regardless of size. We can also see that of the three types of campgrounds, the large campgrounds are more likely to have a camp store, while the small campgrounds are less likely to have a camp store.
 
 ```{r}
-ggplot(CAnum, aes(x=campgroundSize))+
-  geom_bar(aes(fill=campStore))
+ggplot(campgroundsCA, aes(x=campgroundSize))+
+  geom_bar(aes(fill=campStore)) + 
+  labs(y="Number of Campgrounds", 
+       title= "Comparing Campground Size and Campstore Availability")  + 
+  scale_fill_discrete(name="Camp Store Availability") + 
+  scale_x_discrete(name = "Campground Size by Number of Campsites", 
+                   labels=c("Small (50 or Fewer)", "Medium (51-100)", "Large (101+)"),  
+                   limits=c("Small", "Medium", "Large"))
 ```
+
+
+Let's create a similar bar plot but this time let's visualize how `cellService` availability relates to `camgroundSize` for all campgrounds in the national parks. We see similar trends in cell service availability. `Large` and `Medium` campgrounds have about the same ratio of cell service available to not available. The `Small` campgrounds are much more likely to have no cell service available.
+
+```{r}
+ggplot(campgroundAll, aes(x=campgroundSize))+
+  geom_bar(aes(fill=cellService)) + 
+  labs(y="Number of Campgrounds", 
+       title= "Comparing Campground Size and Cell Service Availability") + 
+  scale_fill_discrete(name="Cell Service Availability")  + 
+  scale_x_discrete(name = "Campground Size by Number of Campsites", 
+                   labels=c("Small (50 or Fewer)", "Medium (51-100)", "Large (101+)"),  
+                   limits=c("Small", "Medium", "Large"))
+```
+
 
 
 ### Creating a Histogram  
 
-Let's look at a histogram of our `totalSites` variable.
+Let's look at a histogram of our `totalSites` variable. In this example we have on huge outlier, which is a campground with `5000` sites called `Lone Rock Beach Primitive Camping Area`. Since the campground with the next highest number of sites is the `Bridge Bay Campground` with `432` we can reasonably assume that this outlier is likely the result of a typo during data entry or an anomaly with how this park reports its data. A quick google search can tell us that the `Lone Rock Beach Primitive Camping Area` is a very large area that offers primitive camping only. In looking at the information entered for some of the other variables, all that have very high numbers, it appears that these values are not directly tied to actual points on a map or designated sites. As a result we will remove the single data point for the `Lone Rock Beach Primitive Camping Area` when creating our histogram. Before we remove this outlier in our data let's look at the impact that this one value has on the creation of our histogram.
 
 ```{r}
-ggplot(CAnum, aes(x=totalSites)) + 
-  geom_histogram(binwidth = 20)
+ggplot(campgroundAll, aes(x=totalSites)) + 
+  geom_histogram(binwidth = 20) +
+  labs(x="Total Campsites Per Campground", y="Number of Campgrounds", title = "Total Campsites per Campground Including Large Outlier")
 ```
+
+
+Now let's remove the outlier to see how our visualization changes. In the histogram below we have used `xlim` to set the x-axis values from 0 to 450, as the second highest data point in our set (and the largest one that we plan on plotting here) is a campground containing `432` campsites. We will also add color to our bins using the `fill` and `color` arguments. As we can easily see from this histogram, the vast majority of the campgrounds returned from the National Parks API have fewer than 100 campsites. 
+
+```{r}
+ggplot(campgroundAll, aes(x=totalSites)) + 
+  geom_histogram(binwidth = 20, fill="dark green", color="black") + 
+    scale_x_continuous(breaks = seq(0, 450, 20), limits = c(0, 450)) + 
+    scale_y_continuous(breaks = seq(0, 150, 10), limits = c(0, 150)) + 
+    labs(x="Total Campsites Per Campground", y="Number of Campgrounds", title = "Total Campsites per Campground Excluding Large Outlier")
+```
+
+
 
 
 
 ### Creating a Boxplot  
 
-### Creating a Scatterplot  
+
+Boxplots can be useful in getting an idea of the center, spead, and skew of our data. Boxplots provide a quick and easy way to visualize the five number summary (minimum, maximum, Q1, Q3, and median values) for our data. In this example we will see how to create a boxplot from our data, this time using the `campgroundCA100` data that we returned from our API earlier. This dataset contains the cleaned data for campgrounds in California, with information on 91 campgrounds total. Below we can see boxplots that we created showing information about `totalSites` by the `campgroundSize` variable. We can see that the `Large` campgrounds have a larger range in terms of the number of `totalSites` present as compared to the `Small` and `Medium` campgrounds.
 
 
-### Creating Plots Comparing Numeric Variables Across Settings of A Categorical Variable
-
-Looking at total sites and electrical hookups
 ```{r}
-plot1<- ggplot(CAnum, aes(x=totalSites, y=reservable, color=cellService)) + 
+ggplot(campgroundsCA, aes(x=campgroundSize, y=totalSites)) + 
+  geom_boxplot(fill="blue", 
+               color="red") + 
+  scale_x_discrete(name = "Campground Size", 
+                   labels=c("Small (50 or Fewer)", "Medium (51-100)", "Large (101+)"),  
+                   limits=c("Small", "Medium", "Large")) + 
+  labs(title="Comparison of Total Sites by Campground Size", 
+       y="Total Campsites") 
+
+```
+
+
+
+### Creating Scatterplots
+
+The last bit of data exploration we are going to learn how to do is to create scatterplots of some numeric data and color by one of our other variables. For both of the scatterplots we will use the data from the `campgroundMountains` data set. 
+
+
+In this scatterplot we will compare the `totalSites` and `reservable` sites variables and color by our `cellService` variable for out `campgroundMountain` data set. 
+```{r}
+plot1<- ggplot(campgroundMountains, aes(x=totalSites, y=reservable, color=cellService)) + 
   geom_point(position = "jitter") + 
-  facet_wrap(~campStore)
+    labs(title="Mountain: Comparison of Total Sites by Number of Sites Reservable", 
+       y="Reservable Campsites",
+       x= "Total Campsites") + 
+  scale_color_discrete(name = "Cell Service Availability")
 
 plot1
 ```
+
+In this scatterplot we will compare the `totalSites` and `noReservation` sites variables and color by our `campStore` variable for out `campgroundMountain` data set. 
+```{r}
+plot2<- ggplot(campgroundMountains, aes(x=totalSites, y=noReservation, color=campStore)) + 
+  geom_point(position = "jitter") + 
+      labs(title="Mountain: Comparison of Total Sites by Number Non-Reservable Sites", 
+       y="Non-Reservable Campsites",
+       x= "Total Campsites") + 
+  scale_color_discrete(name = "Camp Store Status")
+
+plot2
+```
+
 
 
