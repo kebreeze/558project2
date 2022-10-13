@@ -13,7 +13,8 @@ getParkInfo<- function(state=NULL, limitResultsTo="40", searchTerm=FALSE){
   return(as_tibble(parks$data))
 }
 
-
+sites<-campgroundAll%>%
+  select(c(totalSites, name, noReservation, reservable))
 
 
 getEndpointData("activities")

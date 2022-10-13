@@ -7,7 +7,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, message = FALSE)
 ```
 
 # Let's Learn How To Use APIs!
@@ -183,7 +183,9 @@ getParksInfo <- function(state=NULL, limit=30, searchTerm=NULL) {
 
 **Using `getParksInfo()` with the default values for `state`, `limit`, and `searchTerm`.**  
 ```{r}
-getParksInfo()
+defaultParks<- getParksInfo()
+
+defaultParks
 ```
 
 
