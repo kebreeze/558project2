@@ -367,9 +367,7 @@ getParksInfo <- function(state=NULL, limit=30, searchTerm=NULL) {
 and `searchTerm`.**
 
 ``` r
-defaultParks<- getParksInfo()
-
-defaultParks
+getParksInfo()
 ```
 
     ## # A tibble: 30 × 23
@@ -397,7 +395,7 @@ defaultParks
 and specifying `searchTerm="redwoods"`.**
 
 ``` r
-print(getParksInfo(searchTerm = "redwoods"))
+getParksInfo(searchTerm = "redwoods")
 ```
 
     ## # A tibble: 2 × 23
@@ -418,7 +416,7 @@ print(getParksInfo(searchTerm = "redwoods"))
 `searchTerm`.**
 
 ``` r
-print(getParksInfo(state = "california", limit = 100))
+getParksInfo(state = "california", limit = 100)
 ```
 
     ## # A tibble: 33 × 23
@@ -476,7 +474,7 @@ getEvents <- function(state=NULL, pageSize=5, searchTerm=NULL) {
 `searchTerm="holiday"`**
 
 ``` r
-print(getEvents(searchTerm = "holiday"))
+getEvents(searchTerm = "holiday")
 ```
 
     ## # A tibble: 5 × 43
@@ -536,7 +534,7 @@ states. The `searchTerm = "kids"` will return `141` results from our
 API, we can see the first 6 that are returned below.
 
 ``` r
-print(getThingsToDo(limit = 200, searchTerm = "kids"))
+getThingsToDo(limit = 200, searchTerm = "kids")
 ```
 
     ## # A tibble: 142 × 35
@@ -604,7 +602,7 @@ looks like when returned using the`getCampgrounds()` function:
 **`getCampgrounds()` using defaults**
 
 ``` r
-print(getCampgrounds())
+getCampgrounds()
 ```
 
     ## # A tibble: 40 × 31
@@ -631,7 +629,7 @@ print(getCampgrounds())
 **`getCampgrounds()` looking at California and limiting results to 20**
 
 ``` r
-print(getCampgrounds("CA", 20))
+getCampgrounds("CA", 20)
 ```
 
     ## # A tibble: 20 × 31
@@ -668,7 +666,7 @@ print(getCampgrounds("CA", 20))
 **`getCampgrounds()` using the `searchTerm="redwoods"`**
 
 ``` r
-print(getCampgrounds(searchTerm = "redwoods"))
+getCampgrounds(searchTerm = "redwoods")
 ```
 
     ## # A tibble: 4 × 31
@@ -787,7 +785,7 @@ results to 100. Everything looks good, so we are ready to move on to
 working with the data from our API!
 
 ``` r
-print(getCleanCampground("CA", limit = 100))
+getCleanCampground("CA", limit = 100)
 ```
 
     ## # A tibble: 91 × 40
@@ -956,19 +954,15 @@ campAllCellSum<- campgroundAll%>%
   group_by(cellService)%>%
   summarise("Mean Number of Sites" = mean(totalSites), "Median Number of Sites" = median(totalSites), SD = sd(totalSites))
 
-campAllCellSum
+knitr::kable(campAllCellSum)
 ```
 
-    ## # A tibble: 4 × 4
-    ##   cellService          Mean …¹ Media…²    SD
-    ##   <fct>                  <dbl>   <dbl> <dbl>
-    ## 1 Uknown                  8.51     0    22.0
-    ## 2 No Cell Service        52.2     15   259. 
-    ## 3 Seasonal Cell Servi…   86.0     21.5 128. 
-    ## 4 Year Round Cell Ser…   50.2     20    64.2
-    ## # … with abbreviated variable names
-    ## #   ¹​`Mean Number of Sites`,
-    ## #   ²​`Median Number of Sites`
+| cellService             | Mean Number of Sites | Median Number of Sites |        SD |
+|:------------------------|---------------------:|-----------------------:|----------:|
+| Uknown                  |             8.514286 |                    0.0 |  22.02188 |
+| No Cell Service         |            52.220779 |                   15.0 | 258.93124 |
+| Seasonal Cell Service   |            85.968750 |                   21.5 | 127.97063 |
+| Year Round Cell Service |            50.241379 |                   20.0 |  64.18992 |
 
 **Mean, Median and Standard Deviation of Total Campsites by Cell Service
 Coverage in Texas**
@@ -984,18 +978,14 @@ campTXCellSum<- campgroundsTX%>%
   group_by(cellService)%>%
   summarise("Mean Number of Sites" = mean(totalSites), "Median Number of Sites" = median(totalSites), SD = sd(totalSites))
 
-campTXCellSum
+knitr::kable(campTXCellSum)
 ```
 
-    ## # A tibble: 3 × 4
-    ##   cellService          Mean …¹ Media…²    SD
-    ##   <fct>                  <dbl>   <dbl> <dbl>
-    ## 1 Uknown                  33      33    25.5
-    ## 2 No Cell Service         25.7    18.5  23.6
-    ## 3 Year Round Cell Ser…    16.4    15    17.4
-    ## # … with abbreviated variable names
-    ## #   ¹​`Mean Number of Sites`,
-    ## #   ²​`Median Number of Sites`
+| cellService             | Mean Number of Sites | Median Number of Sites |       SD |
+|:------------------------|---------------------:|-----------------------:|---------:|
+| Uknown                  |             33.00000 |                   33.0 | 25.45584 |
+| No Cell Service         |             25.66667 |                   18.5 | 23.59010 |
+| Year Round Cell Service |             16.44444 |                   15.0 | 17.36456 |
 
 ### Contingency Tables
 
@@ -1059,7 +1049,7 @@ ggplot(campgroundsCA, aes(x=campgroundSize))+
                    limits=c("Small", "Medium", "Large"))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 Let’s create a similar bar plot but this time let’s visualize how
 `cellService` availability relates to `camgroundSize` for all
@@ -1079,7 +1069,7 @@ ggplot(campgroundAll, aes(x=campgroundSize))+
                    limits=c("Small", "Medium", "Large"))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ### Creating a Histogram
 
@@ -1105,7 +1095,7 @@ ggplot(campgroundAll, aes(x=totalSites)) +
   labs(x="Total Campsites Per Campground", y="Number of Campgrounds", title = "Total Campsites per Campground Including Large Outlier")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 Now let’s remove the outlier to see how our visualization changes. In
 the histogram below we have used `xlim` to set the x-axis values from 0
@@ -1130,7 +1120,7 @@ ggplot(campgroundAll, aes(x=totalSites)) +
     ## Warning: Removed 1 rows containing missing values
     ## (geom_bar).
 
-![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 ### Creating a Boxplot
 
@@ -1157,7 +1147,7 @@ ggplot(campgroundsCA, aes(x=campgroundSize, y=totalSites)) +
        y="Total Campsites") 
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
 
 ### Creating Scatterplots
 
@@ -1183,7 +1173,7 @@ plot1<- ggplot(campgroundMountains, aes(x=totalSites, y=reservable, color=cellSe
 plot1
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
 
 In this scatterplot we will compare the `totalSites` and `noReservation`
 sites variables and color by our `campStore` variable for out
@@ -1201,4 +1191,4 @@ plot2<- ggplot(campgroundMountains, aes(x=totalSites, y=noReservation, color=cam
 plot2
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->

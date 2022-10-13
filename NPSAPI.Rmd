@@ -183,16 +183,14 @@ getParksInfo <- function(state=NULL, limit=30, searchTerm=NULL) {
 
 **Using `getParksInfo()` with the default values for `state`, `limit`, and `searchTerm`.**  
 ```{r}
-defaultParks<- getParksInfo()
-
-defaultParks
+getParksInfo()
 ```
 
 
 **Using `getParksInfo()` with the default values for `state`, `limit`, and specifying `searchTerm="redwoods"`.**  
 
 ```{r}
-print(getParksInfo(searchTerm = "redwoods"))
+getParksInfo(searchTerm = "redwoods")
 ```
 
 
@@ -200,7 +198,7 @@ print(getParksInfo(searchTerm = "redwoods"))
 
 
 ```{r}
-print(getParksInfo(state = "california", limit = 100))
+getParksInfo(state = "california", limit = 100)
 ```
 
 
@@ -233,7 +231,7 @@ getEvents <- function(state=NULL, pageSize=5, searchTerm=NULL) {
 
 **Testing the `getEvents()` function to return results using `searchTerm="holiday"`**
 ```{r}
-print(getEvents(searchTerm = "holiday"))
+getEvents(searchTerm = "holiday")
 ```
 
 
@@ -269,7 +267,7 @@ Let's see an example of what data will look like when returned from the `thingst
 
 
 ```{r}
-print(getThingsToDo(limit = 200, searchTerm = "kids"))
+getThingsToDo(limit = 200, searchTerm = "kids")
 ```
 
 
@@ -311,21 +309,21 @@ Before we move on to the next step, let's take a look at what our data looks lik
 
 **`getCampgrounds()` using defaults**
 ```{r}
-print(getCampgrounds())
+getCampgrounds()
 ```
 
 
 **`getCampgrounds()` looking at California and limiting results to 20**
 
 ```{r}
-print(getCampgrounds("CA", 20))
+getCampgrounds("CA", 20)
 ```
 
 
 **`getCampgrounds()` using the `searchTerm="redwoods"`**
 
 ```{r}
-print(getCampgrounds(searchTerm = "redwoods"))
+getCampgrounds(searchTerm = "redwoods")
 ```
 
 
@@ -402,7 +400,7 @@ getCleanCampground<- function(state=NULL, limit=50, searchTerm=NULL){
 
 Let's test this out to make sure things are working as expected. Here we are specifying the state as California and that we want to limit the results to 100. Everything looks good, so we are ready to move on to working with the data from our API!
 ```{r}
-print(getCleanCampground("CA", limit = 100))
+getCleanCampground("CA", limit = 100)
 ```
 
 
@@ -477,7 +475,7 @@ campAllCellSum<- campgroundAll%>%
   group_by(cellService)%>%
   summarise("Mean Number of Sites" = mean(totalSites), "Median Number of Sites" = median(totalSites), SD = sd(totalSites))
 
-campAllCellSum
+knitr::kable(campAllCellSum)
 ```
 
 
@@ -489,7 +487,7 @@ campTXCellSum<- campgroundsTX%>%
   group_by(cellService)%>%
   summarise("Mean Number of Sites" = mean(totalSites), "Median Number of Sites" = median(totalSites), SD = sd(totalSites))
 
-campTXCellSum
+knitr::kable(campTXCellSum)
 ```
 
 
