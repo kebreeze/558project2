@@ -90,7 +90,7 @@ str(getEndpointInfo("activities"))
 ```
 
 
-**Updated to return just our `data` element from our specified endpoint.
+**Updated to return just our `data` element from our specified endpoint.**
 ```{r}
 getEndpointData<- function(endpoint){
   limit<- "50"

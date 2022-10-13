@@ -236,8 +236,8 @@ str(getEndpointInfo("activities"))
     ##   ..$ id  : chr [1:40] "09DF0950-D319-4557-A57E-04CD2F63FF42" "13A57703-BB1A-41A2-94B8-53B692EB7238" "5F723BAD-7359-48FC-98FA-631592256E35" "7CE6E935-F839-4FEC-A63E-052B1DEF39D2" ...
     ##   ..$ name: chr [1:40] "Arts and Culture" "Astronomy" "Auto and ATV" "Biking" ...
 
-\*\*Updated to return just our `data` element from our specified
-endpoint.
+**Updated to return just our `data` element from our specified
+endpoint.**
 
 ``` r
 getEndpointData<- function(endpoint){
@@ -1049,7 +1049,7 @@ ggplot(campgroundsCA, aes(x=campgroundSize))+
                    limits=c("Small", "Medium", "Large"))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 Let’s create a similar bar plot but this time let’s visualize how
 `cellService` availability relates to `camgroundSize` for all
@@ -1069,7 +1069,7 @@ ggplot(campgroundAll, aes(x=campgroundSize))+
                    limits=c("Small", "Medium", "Large"))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
 ### Creating a Histogram
 
@@ -1095,7 +1095,7 @@ ggplot(campgroundAll, aes(x=totalSites)) +
   labs(x="Total Campsites Per Campground", y="Number of Campgrounds", title = "Total Campsites per Campground Including Large Outlier")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 Now let’s remove the outlier to see how our visualization changes. In
 the histogram below we have used `xlim` to set the x-axis values from 0
@@ -1120,7 +1120,7 @@ ggplot(campgroundAll, aes(x=totalSites)) +
     ## Warning: Removed 1 rows containing missing values
     ## (geom_bar).
 
-![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ### Creating a Boxplot
 
@@ -1147,7 +1147,7 @@ ggplot(campgroundsCA, aes(x=campgroundSize, y=totalSites)) +
        y="Total Campsites") 
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 ### Creating Scatterplots
 
@@ -1173,7 +1173,7 @@ plot1<- ggplot(campgroundMountains, aes(x=totalSites, y=reservable, color=cellSe
 plot1
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 In this scatterplot we will compare the `totalSites` and `noReservation`
 sites variables and color by our `campStore` variable for out
@@ -1191,4 +1191,4 @@ plot2<- ggplot(campgroundMountains, aes(x=totalSites, y=noReservation, color=cam
 plot2
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
