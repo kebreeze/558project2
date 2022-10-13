@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Let's Learn How To Use APIs!
 
-This vignette is dedicated to helping better understand APIs. Specifically, we will be looking at how to contact an API using user-generated functions to query, parse and return well structured data. The second portion of this vignette will look at how to use functions to do some exploratory data analysis on the data obtained from the API.  
+This vignette is dedicated to helping better understand APIs. Specifically, we will be looking at how to contact an API using user-generated functions to query, parse and return well structured data. The second portion of this vignette will look at how to use functions to do some exploratory data analysis on data obtained from the API.  
 
 
 ## Requirements
@@ -23,6 +23,7 @@ In order to follow along with this vignette, the user will need to load the foll
 1.  The `jsonlite` package - The `jsonlite` package will allow us to contact the API via URL and help to parse the data returned from our API. The National Parks API only returns data in the form of JSON files, so the `jsonlite` package will work nicely with this API. If you are working with another API it will be important to understand what type of data the API will return and identify the appropriate package to parse your raw data that your API returns.  
 2.  The `tidyverse` package - The `tidyverse` package will allow us to perform basic exploratory data analysis.  
 3.  The `stringr` package will help with error handling for our state names/abbreviations. We can use this to work with strings provided by the user to the state argument to help identify and reformat user provided information.  
+4.  The `knitr` package will help with making our tables display in a much easier to read format.  
 
 
 In addition to the libraries listed above the user will need to create their own `.Renviron` file to store their private API Key to protect it from accidentally being shared publicly on github. You will want to make sure that you add `.Renviron` to your `.gitignore` file so that it will not be committed to github. Within the `.Renviron` file you can store your API key using the following line of code: `apiKey="YourNPSAPIKey"`. More detail on API keys and the `.Renviron` file can be found below in the **Quick Note About API Keys and `.Renviron`** section.
@@ -31,6 +32,7 @@ In addition to the libraries listed above the user will need to create their own
 library(jsonlite)
 library(tidyverse)
 library(stringr)
+library(knitr)
 ```
 
 ## National Parks Service API
@@ -45,12 +47,6 @@ For this vignette we are using the [National Parks Service's API](https://www.np
 
 Most APIs will require a user to enter an API key when contacting the API. An API key is unique to each user. For some APIs these are provided free and are able to be used for essentially unlimited calls to an API. In other cases, a user may be limited in the number of calls allowed to an API or may even be charged for access to the APIs data. In any case, you **SHOULD ALWAYS KEEP YOUR API KEY PRIVATE!** The easiest way to do this when working on a project in Rstudio/github is to create a `.Renviron` file in your working directory for your project that stores your API key. You can then update your `.gitignore` to include your `.Renviron` file, thereby allowing you to access your API key for use during calls to the API, while at the same time keeping your API key secret and preventing the key from being uploaded to github. You can add files directly to your `.gitignore` file or you can use menu options in RStudio.  
 
-
-<center>
-
-![**Adding file to .gitignore using menu option in RStudio**](gitignoreMenu.png)  
-
-</center>
 
 You can also store other useful objects in `.Reviron`, such as a baseURL, that you can then access for use in different functions that you create to contact your API. This prevents having to rewrite the same baseURL over and over again, and can also allow you to easily update functions that use this baseURL if the API itself decides to change the baseURL required. 
 
@@ -147,6 +143,10 @@ getState <- function(state) {
 ```
 
 
+## Functions to Contact the National Parks API  
+
+We have written four functions to connect to four different endpoints (`parks`, `events`, `thingstodo`, and `campgrounds`) and allow for user modifications on each endpoint when contacting the API. All of these functions will return data in the form of a tibble.
+
 
 ### Contacting the `parks` Endpoint and Allowing for Modifications  
 
@@ -172,9 +172,10 @@ getParksInfo <- function(state=NULL, limit=30, searchTerm=NULL) {
 
   parks<- fromJSON(searchURL)
   
-  return(parks$data)
+  return(as_tibble(parks$data))
 }
 ```
+
 
 
 #### Testing `getParksInfo()` Function with Different Modifications  
@@ -182,18 +183,14 @@ getParksInfo <- function(state=NULL, limit=30, searchTerm=NULL) {
 
 **Using `getParksInfo()` with the default values for `state`, `limit`, and `searchTerm`.**  
 ```{r}
-getParksDefault<- getParksInfo()
-
-head(getParksDefault)
+getParksInfo()
 ```
 
 
 **Using `getParksInfo()` with the default values for `state`, `limit`, and specifying `searchTerm="redwoods"`.**  
 
 ```{r}
-getParksRedwoods<-getParksInfo(searchTerm = "redwoods")
-
-getParksRedwoods
+print(getParksInfo(searchTerm = "redwoods"))
 ```
 
 
@@ -201,16 +198,14 @@ getParksRedwoods
 
 
 ```{r}
-getParksCA100<-getParksInfo(state = "california", limit = 100)
-
-head(getParksCA100)
+print(getParksInfo(state = "california", limit = 100))
 ```
 
 
 
 ### Contacting the `events` Endpoint and Allowing for Modifications  
 
-
+The `getEvents` function allows users to contact the `events` endpoint from the National Parks API. It will allow modifications of the `state` input (default value of `NULL`), the `pageSize` input that controls the results returned per page (default is set to `5`) and the `searchTerm` (default set to `NULL`).
 ```{r}
 getEvents <- function(state=NULL, pageSize=5, searchTerm=NULL) {
   searchURL <- paste0(Sys.getenv("baseURL"), "events?", Sys.getenv("apiKey"), "&")
@@ -229,8 +224,14 @@ getEvents <- function(state=NULL, pageSize=5, searchTerm=NULL) {
   
   events<- fromJSON(searchURL)
   
-  return(events$data)
+  return(as_tibble(events$data))
 }
+```
+
+
+**Testing the `getEvents()` function to return results using `searchTerm="holiday"`**
+```{r}
+print(getEvents(searchTerm = "holiday"))
 ```
 
 
@@ -257,7 +258,7 @@ getThingsToDo <- function(state=NULL, limit=60, searchTerm=NULL) {
   
   thingsToDo<- fromJSON(searchURL)
   
-  return(thingsToDo$data)
+  return(as_tibble(thingsToDo$data))
 }
 ```
 
@@ -266,9 +267,7 @@ Let's see an example of what data will look like when returned from the `thingst
 
 
 ```{r}
-thingsToDoKids<- getThingsToDo(limit = 200, searchTerm = "kids")
-
-head(thingsToDoKids)
+print(getThingsToDo(limit = 200, searchTerm = "kids"))
 ```
 
 
@@ -296,7 +295,7 @@ getCampgrounds <- function(state=NULL, limit=40, searchTerm=NULL) {
   
   campgrounds<- fromJSON(searchURL)
   
-  return(campgrounds$data)
+  return(as_tibble(campgrounds$data))
 }
 ```
 
@@ -310,32 +309,32 @@ Before we move on to the next step, let's take a look at what our data looks lik
 
 **`getCampgrounds()` using defaults**
 ```{r}
-head(getCampgrounds())
+print(getCampgrounds())
 ```
 
 
 **`getCampgrounds()` looking at California and limiting results to 20**
 
 ```{r}
-head(getCampgrounds("CA", 20))
+print(getCampgrounds("CA", 20))
 ```
 
 
 **`getCampgrounds()` using the `searchTerm="redwoods"`**
 
 ```{r}
-getCampgrounds(searchTerm = "redwoods")
+print(getCampgrounds(searchTerm = "redwoods"))
 ```
 
 
 ## Data Exploration
 
 
-Next, we will walk through some basic exploratory data analysis. For this section we will focus on data that we will collect from the `campgrounds` endpoint, using the `getCleanCampground()` function that we will create below. In the data exploration steps we will demonstrate:  
+Next, we will walk through some basic exploratory data analysis. As this vignette is meant to show how you would go about using an API to collect data and how you could then do some basic data exploration, we will focus on the mechanics of creating the various plots, tables and summaries. We will spend less time focusing on the details of  or possible conclusions about the specific data that we are using. For this section we will focus on data that we will collect from the `campgrounds` endpoint, using the `getCleanCampground()` function that we will create below. In the data exploration steps we will demonstrate:  
 
 
 1.  How to pull data from multiple calls to our data obtaining function (using our `getCleanCampground()` function).  
-2.  How to create a new variable that is a function of other variables (our `cleaningData()` function).  
+2.  How to create a new variable that is a function of other variables (using our `cleaningData()` function).  
 3.  How to create contingency tables based on data returned from the API.  
 4.  How to create numerical summaries for quantitative variables at each setting of a categorical variable.  
 5.  How to create plots with nice labels and titles, utilizing coloring, grouping, etc. and including the following plot types:  
@@ -401,7 +400,7 @@ getCleanCampground<- function(state=NULL, limit=50, searchTerm=NULL){
 
 Let's test this out to make sure things are working as expected. Here we are specifying the state as California and that we want to limit the results to 100. Everything looks good, so we are ready to move on to working with the data from our API!
 ```{r}
-head(getCleanCampground("CA", limit = 100))
+print(getCleanCampground("CA", limit = 100))
 ```
 
 
@@ -497,13 +496,13 @@ campTXCellSum
 
 Next let's see how to create a contingency table from our `campgroundCA` data using the `table()` function. Here we are creating a contingency table looking at our `campStore` and `campgroundSize` variables from our `campgroundsCA` data. We can see that across all categories it is much more common for campgrounds to no camp store than to have either a seasonal or year round camp store.  
 ```{r}
-table(campgroundsCA$campgroundSize, campgroundsCA$campStore)
+knitr::kable(table(campgroundsCA$campgroundSize, campgroundsCA$campStore))
 ```
 
 Let's compare this to the same contingency table for all national parks (not just national parks in California) using the `campgroundsAll` data.  Here we can see the same trends as we saw in the previous table, with it being more likely that a campground will not have a store than it will have a camp store. We can also see in these tables that the chances of having a camp store are higher given you are looking at a large campground as compared to the chances of having a camp store given that you are looking at a small campground.
 
 ```{r}
-table(campgroundAll$campgroundSize, campgroundAll$campStore)
+knitr::kable(table(campgroundAll$campgroundSize, campgroundAll$campStore))
 ```
 
 
@@ -591,13 +590,14 @@ ggplot(campgroundsCA, aes(x=campgroundSize, y=totalSites)) +
 
 ### Creating Scatterplots
 
-The last bit of data exploration we are going to learn how to do is to create scatterplots of some numeric data and color by one of our other variables. For both of the scatterplots we will use the data from the `campgroundMountains` data set. 
+The last bit of data exploration we are going to learn how to do is to create scatterplots of some numeric data and color by one of our other variables. For both of the scatterplots we will use the data from the `campgroundMountains` data set.  We will add trend lines to each scatterplot using the `geom_smooth()` function.
 
 
 In this scatterplot we will compare the `totalSites` and `reservable` sites variables and color by our `cellService` variable for out `campgroundMountain` data set. 
 ```{r}
 plot1<- ggplot(campgroundMountains, aes(x=totalSites, y=reservable, color=cellService)) + 
   geom_point(position = "jitter") + 
+  geom_smooth(method = lm, color="black") + 
     labs(title="Mountain: Comparison of Total Sites by Number of Sites Reservable", 
        y="Reservable Campsites",
        x= "Total Campsites") + 
@@ -606,10 +606,13 @@ plot1<- ggplot(campgroundMountains, aes(x=totalSites, y=reservable, color=cellSe
 plot1
 ```
 
+
+
 In this scatterplot we will compare the `totalSites` and `noReservation` sites variables and color by our `campStore` variable for out `campgroundMountain` data set. 
 ```{r}
 plot2<- ggplot(campgroundMountains, aes(x=totalSites, y=noReservation, color=campStore)) + 
   geom_point(position = "jitter") + 
+    geom_smooth(method = lm, color="black") + 
       labs(title="Mountain: Comparison of Total Sites by Number Non-Reservable Sites", 
        y="Non-Reservable Campsites",
        x= "Total Campsites") + 

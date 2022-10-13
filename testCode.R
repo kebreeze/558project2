@@ -16,7 +16,7 @@ getParkInfo<- function(state=NULL, limitResultsTo="40", searchTerm=FALSE){
 
 
 
-
+getEndpointData("activities")
 
 
 
